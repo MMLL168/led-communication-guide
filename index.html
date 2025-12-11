@@ -139,13 +139,6 @@
             opacity: 0.7;
         }
     </style>
-    <!-- 
-       v4.2 Update Log:
-       1. Preserved ALL v4.1 functionality.
-       2. CONTROL SYSTEM UPDATE: Added "All-in-One" (單板全整合) tab.
-       3. Architecture: RPi 5 + Active HAT = PC + Sender + Receiver.
-       4. Engineering Note: Explained how software (rpi-rgb-led-matrix) replaces FPGA logic.
-    -->
 </head>
 <body class="bg-slate-50 text-slate-800 leading-relaxed">
 
@@ -157,12 +150,18 @@
                     <span class="text-2xl mr-2">📟</span>
                     <h1 class="text-xl font-bold text-slate-900 tracking-tight">LED 顯示屏串接通訊指南 <span class="text-xs bg-red-600 text-white px-2 py-0.5 rounded ml-2">v4.2 All-in-One</span></h1>
                 </div>
-                <nav class="hidden md:flex space-x-6">
+                <nav class="hidden md:flex space-x-6 items-center">
                     <button onclick="scrollToSection('protocols')" class="text-slate-500 hover:text-indigo-600 px-2 py-2 text-sm font-medium">通訊協定</button>
                     <button onclick="scrollToSection('hardware')" class="text-slate-500 hover:text-indigo-600 px-2 py-2 text-sm font-medium">硬體接頭</button>
                     <button onclick="scrollToSection('topology')" class="text-slate-500 hover:text-indigo-600 px-2 py-2 text-sm font-medium">串接拓撲</button>
                     <button onclick="scrollToSection('mapping')" class="text-indigo-600 px-2 py-2 text-sm font-bold border-b-2 border-indigo-600">像素映射</button>
                     <button onclick="scrollToSection('control')" class="text-slate-500 hover:text-indigo-600 px-2 py-2 text-sm font-medium">控制系統</button>
+                    
+                    <!-- [ADDED] Link to Implementation Page -->
+                    <a href="implementation.html" class="ml-2 bg-slate-800 text-white px-3 py-1.5 rounded-md text-sm font-bold shadow hover:bg-slate-700 flex items-center transition group border border-slate-700">
+                        <span>工程實作手冊</span>
+                        <svg class="w-4 h-4 ml-2 group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                    </a>
                 </nav>
             </div>
         </div>
@@ -812,5 +811,3 @@
     </script>
 </body>
 </html>
-
-用這份改
