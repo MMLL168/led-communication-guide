@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LED 顯示屏串接通訊原理 | 互動指南 v3.2 (Animation Fixed)</title>
+    <title>LED 顯示屏串接通訊原理 | 互動指南 v3.3 (Tech Deep Dive)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -67,24 +67,6 @@
         .modal.active .modal-content {
             transform: scale(1);
         }
-        .flow-arrow::after {
-            content: "→";
-            position: absolute;
-            right: -20px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #94a3b8;
-            font-size: 1.5rem;
-        }
-        @media (max-width: 768px) {
-            .flow-arrow::after {
-                content: "↓";
-                right: 50%;
-                top: auto;
-                bottom: -25px;
-                transform: translateX(50%);
-            }
-        }
 
         /* Pin Table Styles */
         .pin-table {
@@ -119,13 +101,50 @@
             border: 1px solid #cbd5e1;
             vertical-align: middle;
         }
+
+        /* Mapping Grid Styles (NEW) */
+        .cab-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            aspect-ratio: 16/9;
+        }
+        .cab-cell {
+            background: #e2e8f0;
+            border: 2px solid #cbd5e1;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .cab-cell:hover {
+            border-color: #6366f1;
+            color: #4f46e5;
+        }
+        .cab-cell.active {
+            background: #4f46e5;
+            color: white;
+            border-color: #312e81;
+        }
+        .cab-coord {
+            position: absolute;
+            bottom: 4px;
+            right: 4px;
+            font-size: 0.6rem;
+            opacity: 0.7;
+        }
     </style>
     <!-- 
-       v3.2 Fix Log:
-       1. [FIXED] Restored Packet Animation Logic in the Canvas `draw` loop.
-          - Added calculation for packet position based on `Date.now()`.
-          - Implemented distinct animation paths for Chain, Star, and Ring topologies.
-       2. [Preserved] All Pinout Tables and Modal content from v3.1.
+       v3.3 Update Log:
+       1. Preserved ALL previous functionality (v3.2 fixed animation, v3.1 pinouts).
+       2. NEW SECTION: "Pixel Mapping & Addressing" (像素映射與定址原理).
+       3. Interactive 3x2 Grid: Visualizes how a large image is split among cabinets.
+       4. Technical Explanation Box: Answers "How the 2nd screen knows its address" (Flash/FPGA logic).
     -->
 </head>
 <body class="bg-slate-50 text-slate-800 leading-relaxed">
@@ -136,13 +155,14 @@
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center">
                     <span class="text-2xl mr-2">📟</span>
-                    <h1 class="text-xl font-bold text-slate-900 tracking-tight">LED 顯示屏串接通訊指南 <span class="text-xs bg-emerald-600 text-white px-2 py-0.5 rounded ml-2">v3.2 Fixed</span></h1>
+                    <h1 class="text-xl font-bold text-slate-900 tracking-tight">LED 顯示屏串接通訊指南 <span class="text-xs bg-slate-800 text-white px-2 py-0.5 rounded ml-2">v3.3 Tech Dive</span></h1>
                 </div>
-                <nav class="hidden md:flex space-x-8">
-                    <button onclick="scrollToSection('protocols')" class="text-slate-500 hover:text-indigo-600 px-3 py-2 text-sm font-medium">通訊協定</button>
-                    <button onclick="scrollToSection('hardware')" class="text-slate-500 hover:text-indigo-600 px-3 py-2 text-sm font-medium">硬體接頭</button>
-                    <button onclick="scrollToSection('topology')" class="text-slate-500 hover:text-indigo-600 px-3 py-2 text-sm font-medium">串接拓撲</button>
-                    <button onclick="scrollToSection('control')" class="text-slate-500 hover:text-indigo-600 px-3 py-2 text-sm font-medium">控制系統</button>
+                <nav class="hidden md:flex space-x-6">
+                    <button onclick="scrollToSection('protocols')" class="text-slate-500 hover:text-indigo-600 px-2 py-2 text-sm font-medium">通訊協定</button>
+                    <button onclick="scrollToSection('hardware')" class="text-slate-500 hover:text-indigo-600 px-2 py-2 text-sm font-medium">硬體接頭</button>
+                    <button onclick="scrollToSection('topology')" class="text-slate-500 hover:text-indigo-600 px-2 py-2 text-sm font-medium">串接拓撲</button>
+                    <button onclick="scrollToSection('mapping')" class="text-indigo-600 px-2 py-2 text-sm font-bold border-b-2 border-indigo-600">像素映射</button>
+                    <button onclick="scrollToSection('control')" class="text-slate-500 hover:text-indigo-600 px-2 py-2 text-sm font-medium">控制系統</button>
                 </nav>
             </div>
         </div>
@@ -169,8 +189,8 @@
                 <p class="mt-2 text-sm text-slate-500">含完整 Pin Definition 與訊號流向圖。</p>
             </div>
             <div class="bg-white overflow-hidden shadow rounded-lg p-6 border-t-4 border-amber-500">
-                <div class="text-lg font-medium text-slate-900">拓撲架構</div>
-                <p class="mt-2 text-sm text-slate-500">菊花鏈 (Daisy Chain) 與環狀備援 (Redundancy) 動態模擬。</p>
+                <div class="text-lg font-medium text-slate-900">像素映射</div>
+                <p class="mt-2 text-sm text-slate-500">解析 FPGA 如何過濾並顯示正確的畫面區塊。</p>
             </div>
         </div>
     </section>
@@ -331,6 +351,91 @@
                         <span>🖥️ 發送卡 (Sender)</span>
                         <span>📺 LED 箱體 (Cabinets)</span>
                     </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- NEW SECTION: PIXEL MAPPING (v3.3) -->
+    <section id="mapping" class="py-12 bg-slate-100 border-y border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="lg:text-center mb-8">
+                <h3 class="text-3xl leading-8 font-extrabold tracking-tight text-slate-900">
+                    像素映射與定址原理 (Pixel Mapping)
+                </h3>
+                <p class="mt-4 max-w-2xl text-xl text-slate-500 lg:mx-auto">
+                    影像資料如何分割？第二個屏怎麼知道它的位置？答案在於 FPGA 邏輯與 Flash 參數。
+                </p>
+            </div>
+
+            <div class="flex flex-col lg:flex-row gap-8 items-start">
+                
+                <!-- Left: Interactive Grid -->
+                <div class="w-full lg:w-1/2">
+                    <div class="bg-white p-4 rounded-xl shadow-lg border border-slate-200">
+                        <div class="flex justify-between items-end mb-2">
+                            <span class="text-xs font-bold text-slate-400">SOURCE: 1920 x 1080 (Signal Stream)</span>
+                            <span class="text-xs text-indigo-500">點擊箱體查看詳細邏輯 ↓</span>
+                        </div>
+                        <!-- 3x2 Grid -->
+                        <div class="cab-grid" id="mappingGrid">
+                            <!-- Injected by JS -->
+                        </div>
+                        <div class="mt-4 p-3 bg-slate-50 border border-slate-200 rounded text-sm font-mono text-slate-600" id="gridConsole">
+                            > System Ready. Click a cabinet to inspect.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Technical Explanation -->
+                <div class="w-full lg:w-1/2 space-y-6">
+                    
+                    <!-- Deep Dive Box -->
+                    <div class="bg-indigo-900 text-white p-6 rounded-xl shadow-lg relative overflow-hidden">
+                        <div class="absolute top-0 right-0 -mt-2 -mr-2 w-24 h-24 bg-indigo-700 rounded-full opacity-50 blur-xl"></div>
+                        <h4 class="text-xl font-bold mb-3 flex items-center gap-2">
+                            <span>🤔</span> 技術解密：定址原理
+                        </h4>
+                        <p class="text-indigo-200 text-sm mb-4 leading-relaxed">
+                            <strong>問：</strong>物理上串接在一起，第二個屏怎麼知道它是第二個？<br>
+                            <strong>答：</strong>不是靠硬體 DIP 開關，而是靠<strong>軟體燒錄 (Soft-Mapping)</strong>。
+                        </p>
+                        <ol class="list-decimal pl-5 space-y-2 text-sm text-indigo-100">
+                            <li><strong>設定階段：</strong> PC 軟體發送指令，將 <code class="bg-indigo-800 px-1 rounded">Start_X, Start_Y</code> 參數寫入每張接收卡的 <strong>SPI Flash</strong> 記憶體中。</li>
+                            <li><strong>運行階段：</strong> 發送卡廣播完整的影像資料流 (Broadcast)。</li>
+                            <li><strong>FPGA 過濾：</strong> 每張卡的 FPGA 實時比對資料流標頭，<strong>只抓取 (Latch)</strong> 符合自己 Flash 內座標參數的像素數據，其餘忽略或轉發。</li>
+                        </ol>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl border border-slate-200">
+                        <h4 class="font-bold text-slate-800 mb-2">資料流處理 (Data Pipeline)</h4>
+                        <div class="space-y-4">
+                            <div class="flex items-center gap-3">
+                                <div class="bg-slate-100 p-2 rounded text-2xl">📡</div>
+                                <div>
+                                    <div class="text-sm font-bold text-slate-700">Source (訊號源)</div>
+                                    <div class="text-xs text-slate-500">輸出完整 1920x1080 畫面</div>
+                                </div>
+                            </div>
+                            <div class="w-0.5 h-4 bg-slate-300 ml-6"></div>
+                            <div class="flex items-center gap-3">
+                                <div class="bg-slate-100 p-2 rounded text-2xl">📦</div>
+                                <div>
+                                    <div class="text-sm font-bold text-slate-700">Sending Card (打包)</div>
+                                    <div class="text-xs text-slate-500">將像素封裝為 Ethernet Frame，不進行物理切割</div>
+                                </div>
+                            </div>
+                            <div class="w-0.5 h-4 bg-slate-300 ml-6"></div>
+                            <div class="flex items-center gap-3">
+                                <div class="bg-slate-100 p-2 rounded text-2xl">🔍</div>
+                                <div>
+                                    <div class="text-sm font-bold text-slate-700">Receiving Card (過濾)</div>
+                                    <div class="text-xs text-slate-500">根據 Offset 參數，從高速流中擷取屬於自己的像素</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>
@@ -543,7 +648,7 @@
         }
         selectConnector('rj45');
 
-        // --- Topology & Control Logic (FIXED: ANIMATION RESTORED) ---
+        // --- Topology & Control Logic (Animation) ---
         const canvas = document.getElementById('topologyCanvas');
         const ctx = canvas.getContext('2d');
         let activeTopology = 'chain';
@@ -560,35 +665,30 @@
             else if(type==='star') { nodes.push(new Node(w/2, h/2-60, 'C1'), new Node(w/2+60, h/2, 'C2'), new Node(w/2, h/2+60, 'C3'), new Node(w/2-60, h/2, 'C4')); }
         }
 
-        // Restored Animation Loop with Moving Packets
         function draw() {
             ctx.clearRect(0,0,canvas.width,canvas.height);
             if(nodes.length===0) return;
 
-            // 1. Draw static lines
+            // 1. Static Lines
             ctx.lineWidth=3; ctx.strokeStyle='#94a3b8'; ctx.beginPath(); ctx.moveTo(nodes[0].x,nodes[0].y);
             if(activeTopology==='chain') for(let i=1;i<nodes.length;i++) ctx.lineTo(nodes[i].x,nodes[i].y);
             else if(activeTopology==='star') for(let i=1;i<nodes.length;i++) { ctx.moveTo(nodes[0].x,nodes[0].y); ctx.lineTo(nodes[i].x,nodes[i].y); }
             else if(activeTopology==='ring') { 
                 for(let i=1;i<nodes.length;i++) ctx.lineTo(nodes[i].x,nodes[i].y); 
-                // Draw Backup Line in Green
                 ctx.stroke(); ctx.beginPath(); ctx.strokeStyle='#10b981'; 
                 ctx.moveTo(nodes[nodes.length-1].x,nodes[nodes.length-1].y); 
                 ctx.bezierCurveTo(nodes[nodes.length-1].x, nodes[nodes.length-1].y+100, nodes[0].x, nodes[0].y+100, nodes[0].x, nodes[0].y);
             }
             ctx.stroke();
 
-            // 2. Draw Moving Packets (THE FIX)
+            // 2. Animated Packets
             const time = Date.now() * 0.002;
-            ctx.fillStyle = '#f59e0b'; // Amber-500
+            ctx.fillStyle = '#f59e0b';
             
             if (activeTopology === 'chain') {
                 const totalDist = nodes[nodes.length-1].x - nodes[0].x;
                 const offset = (time * 100) % totalDist;
-                // Simple interpolation along X axis since Y is constant
-                ctx.beginPath();
-                ctx.arc(nodes[0].x + offset, nodes[0].y, 6, 0, Math.PI*2);
-                ctx.fill();
+                ctx.beginPath(); ctx.arc(nodes[0].x + offset, nodes[0].y, 6, 0, Math.PI*2); ctx.fill();
             } else if (activeTopology === 'star') {
                 for(let i=1; i<nodes.length; i++) {
                     const dx = nodes[i].x - nodes[0].x;
@@ -596,46 +696,29 @@
                     const dist = Math.sqrt(dx*dx + dy*dy);
                     const progress = (time * 100) % dist;
                     const ratio = progress / dist;
-                    ctx.beginPath();
-                    ctx.arc(nodes[0].x + dx*ratio, nodes[0].y + dy*ratio, 6, 0, Math.PI*2);
-                    ctx.fill();
+                    ctx.beginPath(); ctx.arc(nodes[0].x + dx*ratio, nodes[0].y + dy*ratio, 6, 0, Math.PI*2); ctx.fill();
                 }
             } else if (activeTopology === 'ring') {
-                 // Forward Packet (Chain part)
                 const totalDist = nodes[nodes.length-1].x - nodes[0].x;
                 const offset = (time * 100) % totalDist;
-                ctx.beginPath();
-                ctx.arc(nodes[0].x + offset, nodes[0].y, 6, 0, Math.PI*2);
-                ctx.fill();
-
-                // Reverse Packet on Backup Line (Green)
+                ctx.beginPath(); ctx.arc(nodes[0].x + offset, nodes[0].y, 6, 0, Math.PI*2); ctx.fill();
                 ctx.fillStyle = '#10b981'; 
-                // Curve approximation logic for animation is complex, simplifying to straight line return visual for clarity
-                // Or just animate backwards along the curve? Let's do simple linear return for stability.
-                const returnProgress = (time * 100) % 1000 / 1000; 
-                // Bezier Point calculation (Quadratic for simplicity)
+                // Simple backward animation for ring return
+                const returnProgress = (time * 100) % 1000 / 1000;
                 const p0 = {x: nodes[nodes.length-1].x, y: nodes[nodes.length-1].y};
-                const p1 = {x: (nodes[nodes.length-1].x + nodes[0].x)/2, y: nodes[0].y + 100}; // Control point
+                const p1 = {x: (nodes[nodes.length-1].x + nodes[0].x)/2, y: nodes[0].y + 100};
                 const p2 = {x: nodes[0].x, y: nodes[0].y};
-                
                 const t = returnProgress;
                 const bx = (1-t)*(1-t)*p0.x + 2*(1-t)*t*p1.x + t*t*p2.x;
                 const by = (1-t)*(1-t)*p0.y + 2*(1-t)*t*p1.y + t*t*p2.y;
-                
-                ctx.beginPath();
-                ctx.arc(bx, by, 5, 0, Math.PI*2);
-                ctx.fill();
+                ctx.beginPath(); ctx.arc(bx, by, 5, 0, Math.PI*2); ctx.fill();
             }
 
-            // 3. Draw Nodes
+            // 3. Nodes
             nodes.forEach(n=>{ 
                 ctx.fillStyle=n.label==='Sender'?'#334155':'#3b82f6'; 
                 ctx.fillRect(n.x-15,n.y-10,30,20); 
-                // Screen flicker effect
-                if(n.label!=='Sender' && Math.random()>0.9) {
-                     ctx.fillStyle = '#60a5fa';
-                     ctx.fillRect(n.x-12,n.y-8,24,16); 
-                }
+                if(n.label!=='Sender' && Math.random()>0.9) { ctx.fillStyle = '#60a5fa'; ctx.fillRect(n.x-12,n.y-8,24,16); }
             });
             requestAnimationFrame(draw);
         }
@@ -659,7 +742,42 @@
             }
         }
 
-        // Init
+        // --- NEW: MAPPING LOGIC (v3.3) ---
+        const cabGrid = document.getElementById('mappingGrid');
+        const gridConsole = document.getElementById('gridConsole');
+        // Define 6 Cabinets (3x2) - Each 640x540 (Just an example resolution to sum up to approx 1920x1080)
+        // Row 1: C1(0,0), C2(640,0), C3(1280,0)
+        // Row 2: C4(0,540), C5(640,540), C6(1280,540)
+        const cabinets = [
+            { id: 1, x: 0, y: 0, w: 640, h: 540 }, { id: 2, x: 640, y: 0, w: 640, h: 540 }, { id: 3, x: 1280, y: 0, w: 640, h: 540 },
+            { id: 4, x: 0, y: 540, w: 640, h: 540 }, { id: 5, x: 640, y: 540, w: 640, h: 540 }, { id: 6, x: 1280, y: 540, w: 640, h: 540 }
+        ];
+
+        // Init Grid
+        cabinets.forEach(cab => {
+            const cell = document.createElement('div');
+            cell.className = 'cab-cell';
+            cell.innerHTML = `CAB ${cab.id}<span class="cab-coord">(${cab.x},${cab.y})</span>`;
+            cell.onclick = () => selectCabinet(cab, cell);
+            cabGrid.appendChild(cell);
+        });
+
+        function selectCabinet(cab, el) {
+            // Highlight
+            document.querySelectorAll('.cab-cell').forEach(c => c.classList.remove('active'));
+            el.classList.add('active');
+
+            // Update Console
+            gridConsole.innerHTML = `
+                <span class="text-indigo-600 font-bold">CABINET ${cab.id} SELECTED</span><br/>
+                ----------------------------------------<br/>
+                <span class="text-slate-500">FLASH CONFIG:</span> START_X=${cab.x}, START_Y=${cab.y}, W=${cab.w}, H=${cab.h}<br/>
+                <span class="text-slate-500">FPGA ACTION:</span>  <span class="bg-green-100 text-green-700 px-1">LATCH DATA</span> from stream matching Offset [${cab.x} to ${cab.x+cab.w}]<br/>
+                <span class="text-slate-500">STATUS:</span>      Receive & Display
+            `;
+        }
+
+        // Init all
         initTopology('chain'); 
         draw();
     </script>
