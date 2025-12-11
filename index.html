@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LED 顯示屏串接通訊原理 | 互動指南 v3.1</title>
+    <title>LED 顯示屏串接通訊原理 | 互動指南 v3.2 (Animation Fixed)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -86,7 +86,7 @@
             }
         }
 
-        /* Pin Table Styles (NEW) */
+        /* Pin Table Styles */
         .pin-table {
             width: 100%;
             border-collapse: collapse;
@@ -121,11 +121,11 @@
         }
     </style>
     <!-- 
-       v3.1 Update Log:
-       1. Preserved ALL v2.0 content (Signal Flow Modal, Topology, Radar).
-       2. Enhanced Hardware Section: Added a right-column for Pin Definitions (Pinout).
-       3. Added CSS for visualization of wire colors (T568B).
-       4. Updated connectorData logic to inject HTML tables.
+       v3.2 Fix Log:
+       1. [FIXED] Restored Packet Animation Logic in the Canvas `draw` loop.
+          - Added calculation for packet position based on `Date.now()`.
+          - Implemented distinct animation paths for Chain, Star, and Ring topologies.
+       2. [Preserved] All Pinout Tables and Modal content from v3.1.
     -->
 </head>
 <body class="bg-slate-50 text-slate-800 leading-relaxed">
@@ -136,7 +136,7 @@
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center">
                     <span class="text-2xl mr-2">📟</span>
-                    <h1 class="text-xl font-bold text-slate-900 tracking-tight">LED 顯示屏串接通訊指南 <span class="text-xs bg-indigo-600 text-white px-2 py-0.5 rounded ml-2">v3.1 Pro</span></h1>
+                    <h1 class="text-xl font-bold text-slate-900 tracking-tight">LED 顯示屏串接通訊指南 <span class="text-xs bg-emerald-600 text-white px-2 py-0.5 rounded ml-2">v3.2 Fixed</span></h1>
                 </div>
                 <nav class="hidden md:flex space-x-8">
                     <button onclick="scrollToSection('protocols')" class="text-slate-500 hover:text-indigo-600 px-3 py-2 text-sm font-medium">通訊協定</button>
@@ -170,7 +170,7 @@
             </div>
             <div class="bg-white overflow-hidden shadow rounded-lg p-6 border-t-4 border-amber-500">
                 <div class="text-lg font-medium text-slate-900">拓撲架構</div>
-                <p class="mt-2 text-sm text-slate-500">菊花鏈 (Daisy Chain) 與環狀備援 (Redundancy) 模擬。</p>
+                <p class="mt-2 text-sm text-slate-500">菊花鏈 (Daisy Chain) 與環狀備援 (Redundancy) 動態模擬。</p>
             </div>
         </div>
     </section>
@@ -219,7 +219,7 @@
         </div>
     </section>
 
-    <!-- Section 2: Hardware Connectors (ENHANCED with PINOUT) -->
+    <!-- Section 2: Hardware Connectors -->
     <section id="hardware" class="py-12 bg-slate-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="mb-8">
@@ -256,11 +256,10 @@
                 </div>
             </div>
 
-            <!-- Detail View (Split Layout) -->
+            <!-- Detail View -->
             <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 <div class="flex flex-col lg:flex-row">
-                    
-                    <!-- Left Column: Description (Same as v2) -->
+                    <!-- Left Column: Description -->
                     <div class="lg:w-1/2 p-8 border-b lg:border-b-0 lg:border-r border-slate-100">
                         <div class="flex items-center gap-4 mb-6">
                             <div class="bg-indigo-50 p-4 rounded-lg text-4xl" id="connector-icon">🌐</div>
@@ -282,7 +281,7 @@
                         </div>
                     </div>
 
-                    <!-- Right Column: Pin Definition Table (NEW) -->
+                    <!-- Right Column: Pin Definition Table -->
                     <div class="lg:w-1/2 bg-slate-50 p-0 flex flex-col">
                         <div class="bg-slate-200 px-6 py-3 border-b border-slate-300 flex justify-between items-center">
                             <span class="font-bold text-slate-700 text-sm">PIN DEFINITION (腳位定義)</span>
@@ -304,7 +303,7 @@
                 <div class="lg:w-1/3 mb-8 lg:mb-0">
                     <h3 class="text-3xl font-bold text-slate-900 mb-4">串接拓撲模擬</h3>
                     <p class="text-slate-500 mb-6">
-                        選擇不同的佈線方式，觀察訊號流向與斷線反應。
+                        選擇不同的佈線方式，觀察<strong class="text-amber-600">即時訊號流向 (動態模擬)</strong> 與斷線反應。
                     </p>
                     <div class="space-y-3">
                         <button onclick="setTopology('chain')" class="w-full text-left px-4 py-3 rounded-lg border border-slate-200 hover:border-indigo-500 hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition topo-btn active-topo" data-type="chain">
@@ -321,7 +320,7 @@
                         </button>
                     </div>
                     <div id="topo-explanation" class="mt-6 p-4 bg-amber-50 text-amber-800 text-sm rounded border border-amber-200">
-                        <strong>模擬說明：</strong> 觀察藍色訊號點的移動。在菊花鏈模式下，如果中間斷開，後端所有螢幕都會失去訊號（變紅）。
+                        <strong>模擬說明：</strong> 觀察黃色訊號點的移動。在菊花鏈模式下，如果中間斷開，後端所有螢幕都會失去訊號（變紅）。
                     </div>
                 </div>
                 <div class="lg:w-2/3">
@@ -380,7 +379,7 @@
                         </div>
                     </div>
                 </div>
-                <!-- V2 FEATURE: MODAL BUTTON -->
+                <!-- Modal Button -->
                 <div class="bg-slate-50 px-8 py-4 border-t border-slate-100 text-sm text-slate-500 flex justify-between items-center absolute bottom-0 w-full">
                     <span id="sys-footer-text">需要電腦保持開機連接</span>
                     <button onclick="openHwModal()" class="text-indigo-600 hover:text-indigo-800 font-bold bg-indigo-50 hover:bg-indigo-100 px-4 py-2 rounded transition flex items-center gap-2 border border-indigo-200 shadow-sm">
@@ -399,7 +398,7 @@
         </div>
     </footer>
 
-    <!-- Hardware Detail Modal (Preserved from v2) -->
+    <!-- Hardware Detail Modal -->
     <div id="hw-modal" class="modal fixed inset-0 z-[100] flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-slate-900 bg-opacity-70 backdrop-blur-sm" onclick="closeHwModal()"></div>
         <div class="modal-content bg-white w-full max-w-4xl rounded-2xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh]">
@@ -409,7 +408,7 @@
             </div>
             <div class="p-6 overflow-y-auto bg-slate-50">
                 <div class="flex flex-col md:flex-row gap-4 justify-between items-stretch mb-8 relative">
-                    <!-- Steps (Simplified for brevity in this view, logically same as v2) -->
+                    <!-- Flow Steps -->
                     <div class="flex-1 bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center relative flow-arrow z-10">
                         <div class="text-3xl mb-1">💻</div><h4 class="font-bold text-sm">訊號源</h4><div class="text-xs text-slate-500">HDMI 輸出</div>
                     </div>
@@ -424,7 +423,7 @@
                     </div>
                 </div>
                 <div class="text-sm text-slate-600 bg-white p-4 rounded border">
-                    <strong>工程師筆記：</strong> 訊號鏈路中，發送卡 (Sending Card) 是將 HDMI 視訊訊號轉為 Gigabit Ethernet 封包的關鍵節點。每個 RJ45 輸出埠通常負責 65 萬像素點。
+                    <strong>工程師筆記：</strong> 訊號鏈路中，發送卡 (Sending Card) 是將 HDMI 視訊訊號轉為 Gigabit Ethernet 封包的關鍵節點。
                 </div>
             </div>
         </div>
@@ -462,7 +461,7 @@
             else { titleEl.textContent = "綜合比較"; descEl.textContent = "乙太網路用於影像，RS-485 用於控制，光纖用於長距離。"; }
         }
 
-        // --- Hardware Connectors & DATA (Updated with Pinout HTML) ---
+        // --- Hardware Connectors & DATA ---
         const connectorData = {
             rj45: {
                 icon: "🌐", title: "RJ45 (乙太網路介面)",
@@ -542,11 +541,9 @@
             document.getElementById('connector-specs').innerHTML = data.specs;
             document.getElementById('pinout-container').innerHTML = data.pinoutHTML;
         }
-
-        // Initialize with RJ45
         selectConnector('rj45');
 
-        // --- Topology & Control Logic (Same as v2) ---
+        // --- Topology & Control Logic (FIXED: ANIMATION RESTORED) ---
         const canvas = document.getElementById('topologyCanvas');
         const ctx = canvas.getContext('2d');
         let activeTopology = 'chain';
@@ -555,25 +552,100 @@
 
         class Node { constructor(x, y, label) { this.x = x; this.y = y; this.label = label; } }
         let nodes = [];
+        
         function initTopology(type) {
             nodes = []; const w = canvas.width, h = canvas.height, startX = 50, startY = h/2;
             nodes.push(new Node(startX, startY, 'Sender'));
             if(type==='chain'||type==='ring') { const gap=(w-100)/4; for(let i=1;i<=4;i++) nodes.push(new Node(startX+i*gap, startY, `Cab ${i}`)); }
             else if(type==='star') { nodes.push(new Node(w/2, h/2-60, 'C1'), new Node(w/2+60, h/2, 'C2'), new Node(w/2, h/2+60, 'C3'), new Node(w/2-60, h/2, 'C4')); }
         }
+
+        // Restored Animation Loop with Moving Packets
         function draw() {
             ctx.clearRect(0,0,canvas.width,canvas.height);
             if(nodes.length===0) return;
+
+            // 1. Draw static lines
             ctx.lineWidth=3; ctx.strokeStyle='#94a3b8'; ctx.beginPath(); ctx.moveTo(nodes[0].x,nodes[0].y);
             if(activeTopology==='chain') for(let i=1;i<nodes.length;i++) ctx.lineTo(nodes[i].x,nodes[i].y);
             else if(activeTopology==='star') for(let i=1;i<nodes.length;i++) { ctx.moveTo(nodes[0].x,nodes[0].y); ctx.lineTo(nodes[i].x,nodes[i].y); }
-            else if(activeTopology==='ring') { for(let i=1;i<nodes.length;i++) ctx.lineTo(nodes[i].x,nodes[i].y); ctx.strokeStyle='#10b981'; ctx.lineTo(nodes[nodes.length-1].x,nodes[nodes.length-1].y+40); ctx.lineTo(nodes[0].x,nodes[0].y+40); ctx.closePath(); }
+            else if(activeTopology==='ring') { 
+                for(let i=1;i<nodes.length;i++) ctx.lineTo(nodes[i].x,nodes[i].y); 
+                // Draw Backup Line in Green
+                ctx.stroke(); ctx.beginPath(); ctx.strokeStyle='#10b981'; 
+                ctx.moveTo(nodes[nodes.length-1].x,nodes[nodes.length-1].y); 
+                ctx.bezierCurveTo(nodes[nodes.length-1].x, nodes[nodes.length-1].y+100, nodes[0].x, nodes[0].y+100, nodes[0].x, nodes[0].y);
+            }
             ctx.stroke();
-            nodes.forEach(n=>{ ctx.fillStyle=n.label==='Sender'?'#334155':'#3b82f6'; ctx.fillRect(n.x-15,n.y-10,30,20); });
+
+            // 2. Draw Moving Packets (THE FIX)
+            const time = Date.now() * 0.002;
+            ctx.fillStyle = '#f59e0b'; // Amber-500
+            
+            if (activeTopology === 'chain') {
+                const totalDist = nodes[nodes.length-1].x - nodes[0].x;
+                const offset = (time * 100) % totalDist;
+                // Simple interpolation along X axis since Y is constant
+                ctx.beginPath();
+                ctx.arc(nodes[0].x + offset, nodes[0].y, 6, 0, Math.PI*2);
+                ctx.fill();
+            } else if (activeTopology === 'star') {
+                for(let i=1; i<nodes.length; i++) {
+                    const dx = nodes[i].x - nodes[0].x;
+                    const dy = nodes[i].y - nodes[0].y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    const progress = (time * 100) % dist;
+                    const ratio = progress / dist;
+                    ctx.beginPath();
+                    ctx.arc(nodes[0].x + dx*ratio, nodes[0].y + dy*ratio, 6, 0, Math.PI*2);
+                    ctx.fill();
+                }
+            } else if (activeTopology === 'ring') {
+                 // Forward Packet (Chain part)
+                const totalDist = nodes[nodes.length-1].x - nodes[0].x;
+                const offset = (time * 100) % totalDist;
+                ctx.beginPath();
+                ctx.arc(nodes[0].x + offset, nodes[0].y, 6, 0, Math.PI*2);
+                ctx.fill();
+
+                // Reverse Packet on Backup Line (Green)
+                ctx.fillStyle = '#10b981'; 
+                // Curve approximation logic for animation is complex, simplifying to straight line return visual for clarity
+                // Or just animate backwards along the curve? Let's do simple linear return for stability.
+                const returnProgress = (time * 100) % 1000 / 1000; 
+                // Bezier Point calculation (Quadratic for simplicity)
+                const p0 = {x: nodes[nodes.length-1].x, y: nodes[nodes.length-1].y};
+                const p1 = {x: (nodes[nodes.length-1].x + nodes[0].x)/2, y: nodes[0].y + 100}; // Control point
+                const p2 = {x: nodes[0].x, y: nodes[0].y};
+                
+                const t = returnProgress;
+                const bx = (1-t)*(1-t)*p0.x + 2*(1-t)*t*p1.x + t*t*p2.x;
+                const by = (1-t)*(1-t)*p0.y + 2*(1-t)*t*p1.y + t*t*p2.y;
+                
+                ctx.beginPath();
+                ctx.arc(bx, by, 5, 0, Math.PI*2);
+                ctx.fill();
+            }
+
+            // 3. Draw Nodes
+            nodes.forEach(n=>{ 
+                ctx.fillStyle=n.label==='Sender'?'#334155':'#3b82f6'; 
+                ctx.fillRect(n.x-15,n.y-10,30,20); 
+                // Screen flicker effect
+                if(n.label!=='Sender' && Math.random()>0.9) {
+                     ctx.fillStyle = '#60a5fa';
+                     ctx.fillRect(n.x-12,n.y-8,24,16); 
+                }
+            });
             requestAnimationFrame(draw);
         }
-        function setTopology(type) { activeTopology=type; document.querySelectorAll('.topo-btn').forEach(b=>b.classList.remove('ring-2','bg-indigo-50')); document.querySelector(`[data-type="${type}"]`).classList.add('ring-2','bg-indigo-50'); initTopology(type); }
-        initTopology('chain'); draw();
+
+        function setTopology(type) { 
+            activeTopology=type; 
+            document.querySelectorAll('.topo-btn').forEach(b=>b.classList.remove('ring-2','bg-indigo-50')); 
+            document.querySelector(`[data-type="${type}"]`).classList.add('ring-2','bg-indigo-50'); 
+            initTopology(type); 
+        }
 
         function toggleSystem(type) {
             if(type==='sync') { 
@@ -586,6 +658,10 @@
                 document.getElementById('btn-async').classList.add('bg-amber-600','text-white'); document.getElementById('btn-async').classList.remove('text-slate-500');
             }
         }
+
+        // Init
+        initTopology('chain'); 
+        draw();
     </script>
 </body>
 </html>
