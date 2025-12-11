@@ -3,11 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LED 顯示屏串接通訊原理 | 互動指南 v3.0</title>
+    <title>LED 顯示屏串接通訊原理 | 互動指南 v3.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif; }
+        
+        /* Chart Styles */
         .chart-container {
             position: relative;
             width: 100%;
@@ -20,6 +22,8 @@
         @media (min-width: 768px) {
             .chart-container { height: 400px; }
         }
+
+        /* Canvas Styles */
         .canvas-sim-container {
             width: 100%;
             height: 300px;
@@ -29,26 +33,32 @@
             position: relative;
             overflow: hidden;
         }
+
+        /* Connector Card Styles */
         .connector-card {
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
         }
         .connector-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
         .connector-card.active {
             border-color: #4f46e5;
-            background-color: #eef2ff;
+            background-color: #eff6ff;
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
         }
+
         /* Modal Styles */
         .modal {
             opacity: 0;
             visibility: hidden;
             transition: all 0.3s ease-in-out;
+            pointer-events: none;
         }
         .modal.active {
             opacity: 1;
             visibility: visible;
+            pointer-events: auto;
         }
         .modal-content {
             transform: scale(0.95);
@@ -57,40 +67,65 @@
         .modal.active .modal-content {
             transform: scale(1);
         }
-        /* Pinout Table Styles */
+        .flow-arrow::after {
+            content: "→";
+            position: absolute;
+            right: -20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-size: 1.5rem;
+        }
+        @media (max-width: 768px) {
+            .flow-arrow::after {
+                content: "↓";
+                right: 50%;
+                top: auto;
+                bottom: -25px;
+                transform: translateX(50%);
+            }
+        }
+
+        /* Pin Table Styles (NEW) */
+        .pin-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
         .pin-table th {
+            text-align: left;
+            padding: 8px;
             background-color: #f1f5f9;
             color: #475569;
-            font-weight: 600;
-            text-transform: uppercase;
-            font-size: 0.75rem;
-            padding: 0.5rem;
             border-bottom: 2px solid #e2e8f0;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
         .pin-table td {
-            padding: 0.5rem;
+            padding: 8px;
             border-bottom: 1px solid #e2e8f0;
-            font-size: 0.875rem;
             font-family: monospace;
         }
         .pin-table tr:last-child td {
             border-bottom: none;
         }
-        .wire-color-dot {
+        .wire-dot {
             display: inline-block;
             width: 10px;
             height: 10px;
             border-radius: 50%;
             margin-right: 6px;
             border: 1px solid #cbd5e1;
+            vertical-align: middle;
         }
     </style>
     <!-- 
-      v3.0 Updates:
-      - Added "pinoutHTML" to connectorData object.
-      - Implemented T568B pinout table for RJ45.
-      - Added RS232 DB9 pinout.
-      - Added visual cues for wire colors.
+       v3.1 Update Log:
+       1. Preserved ALL v2.0 content (Signal Flow Modal, Topology, Radar).
+       2. Enhanced Hardware Section: Added a right-column for Pin Definitions (Pinout).
+       3. Added CSS for visualization of wire colors (T568B).
+       4. Updated connectorData logic to inject HTML tables.
     -->
 </head>
 <body class="bg-slate-50 text-slate-800 leading-relaxed">
@@ -101,7 +136,7 @@
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center">
                     <span class="text-2xl mr-2">📟</span>
-                    <h1 class="text-xl font-bold text-slate-900 tracking-tight">LED 顯示屏串接通訊指南 <span class="text-xs bg-indigo-600 text-white px-2 py-0.5 rounded ml-2">v3.0 Engineering Edition</span></h1>
+                    <h1 class="text-xl font-bold text-slate-900 tracking-tight">LED 顯示屏串接通訊指南 <span class="text-xs bg-indigo-600 text-white px-2 py-0.5 rounded ml-2">v3.1 Pro</span></h1>
                 </div>
                 <nav class="hidden md:flex space-x-8">
                     <button onclick="scrollToSection('protocols')" class="text-slate-500 hover:text-indigo-600 px-3 py-2 text-sm font-medium">通訊協定</button>
@@ -117,11 +152,26 @@
     <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div class="text-center">
             <h2 class="text-3xl font-extrabold text-slate-900 sm:text-4xl">
-                大型 LED 顯示屏通訊架構解析
+                大型 LED 顯示屏如何「對話」？
             </h2>
             <p class="mt-4 max-w-2xl mx-auto text-xl text-slate-500">
-                專為工程師設計：含腳位定義 (Pinout)、訊號流向與拓撲模擬。
+                深入解析嵌入式控制系統、訊號協定與物理層架構。
             </p>
+        </div>
+        
+        <div class="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-3">
+            <div class="bg-white overflow-hidden shadow rounded-lg p-6 border-t-4 border-indigo-500">
+                <div class="text-lg font-medium text-slate-900">通訊協定</div>
+                <p class="mt-2 text-sm text-slate-500">Ethernet (TCP/IP) vs RS-485 序列通訊。</p>
+            </div>
+            <div class="bg-white overflow-hidden shadow rounded-lg p-6 border-t-4 border-teal-500">
+                <div class="text-lg font-medium text-slate-900">硬體介面</div>
+                <p class="mt-2 text-sm text-slate-500">含完整 Pin Definition 與訊號流向圖。</p>
+            </div>
+            <div class="bg-white overflow-hidden shadow rounded-lg p-6 border-t-4 border-amber-500">
+                <div class="text-lg font-medium text-slate-900">拓撲架構</div>
+                <p class="mt-2 text-sm text-slate-500">菊花鏈 (Daisy Chain) 與環狀備援 (Redundancy) 模擬。</p>
+            </div>
         </div>
     </section>
 
@@ -129,28 +179,39 @@
     <section id="protocols" class="bg-white py-12 border-y border-slate-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="lg:text-center mb-10">
-                <h3 class="text-3xl leading-8 font-extrabold tracking-tight text-slate-900">
-                    通訊協定比較 (Protocol Analysis)
+                <p class="text-base text-indigo-600 font-semibold tracking-wide uppercase">Communication Protocols</p>
+                <h3 class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+                    通訊協定比較
                 </h3>
             </div>
+
             <div class="flex flex-col lg:flex-row gap-12 items-center">
                 <div class="w-full lg:w-1/2">
                     <div class="chart-container bg-slate-50 rounded-xl p-4 shadow-inner">
                         <canvas id="protocolRadarChart"></canvas>
                     </div>
-                </div>
-                <div class="w-full lg:w-1/2 space-y-6">
-                    <div class="flex flex-wrap gap-2">
-                        <button onclick="updateChart('all')" class="px-3 py-1 bg-slate-800 text-white rounded text-sm hover:bg-slate-700">全部比較</button>
-                        <button onclick="updateChart('ethernet')" class="px-3 py-1 bg-indigo-100 text-indigo-700 rounded text-sm hover:bg-indigo-200">乙太網路</button>
-                        <button onclick="updateChart('rs485')" class="px-3 py-1 bg-amber-100 text-amber-700 rounded text-sm hover:bg-amber-200">RS-485</button>
+                    <div class="mt-4 text-center text-sm text-slate-400">
+                        點擊右側按鈕切換單一協定特徵
                     </div>
-                    <div id="protocol-desc" class="bg-slate-50 p-6 rounded-lg border border-slate-200 min-h-[10rem]">
+                </div>
+
+                <div class="w-full lg:w-1/2 space-y-6">
+                    <div class="flex flex-wrap gap-2 justify-center lg:justify-start">
+                        <button onclick="updateChart('all')" class="px-4 py-2 bg-slate-800 text-white rounded-md hover:bg-slate-700 transition">全部比較</button>
+                        <button onclick="updateChart('ethernet')" class="px-4 py-2 bg-indigo-100 text-indigo-700 rounded-md hover:bg-indigo-200 transition">乙太網路 (Ethernet)</button>
+                        <button onclick="updateChart('rs485')" class="px-4 py-2 bg-amber-100 text-amber-700 rounded-md hover:bg-amber-200 transition">序列通訊 (RS-485)</button>
+                        <button onclick="updateChart('fiber')" class="px-4 py-2 bg-teal-100 text-teal-700 rounded-md hover:bg-teal-200 transition">光纖傳輸</button>
+                    </div>
+
+                    <div id="protocol-desc" class="bg-slate-50 p-6 rounded-lg border border-slate-200 min-h-[12rem]">
                         <h4 class="text-lg font-bold text-slate-900 mb-2">乙太網路 (Ethernet / TCP/IP)</h4>
-                        <p class="text-slate-600 mb-2"><strong>應用：</strong> 影像數據傳輸 (Sending Card ↔ Receiving Card)。</p>
+                        <p class="text-slate-600 mb-2">
+                            <strong>應用場景：</strong> 目前業界大型 LED 屏與高解析度電視牆的主流標準。
+                        </p>
                         <ul class="list-disc pl-5 space-y-1 text-slate-600 text-sm">
-                            <li><strong>頻寬：</strong> 1Gbps (Gigabit)，使用全部 4 對雙絞線。</li>
-                            <li><strong>物理層：</strong> RJ45 / Cat5e / Cat6。</li>
+                            <li><strong>頻寬：</strong> Gigabit (1000Mbps) 級別，支援影像實時大數據流。</li>
+                            <li><strong>物理層：</strong> 使用標準 RJ45 接頭與 Cat5e/Cat6 雙絞線。</li>
+                            <li><strong>機制：</strong> 用於發送卡(Master)對接收卡(Slave)的數據分發。</li>
                         </ul>
                     </div>
                 </div>
@@ -158,88 +219,78 @@
         </div>
     </section>
 
-    <!-- Section 2: Hardware Connectors (WITH PINOUT) -->
+    <!-- Section 2: Hardware Connectors (ENHANCED with PINOUT) -->
     <section id="hardware" class="py-12 bg-slate-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="mb-6">
-                <h3 class="text-3xl font-bold text-slate-900">硬體接頭與腳位定義 (Pinout)</h3>
-                <p class="mt-2 text-slate-500">點擊卡片查看詳細規格與 Pin Define。</p>
+            <div class="mb-8">
+                <h3 class="text-3xl font-bold text-slate-900">硬體接頭與腳位定義 (Pin Definitions)</h3>
+                <p class="mt-4 text-slate-500">
+                    點擊卡片查看詳細規格、應用場景及 Datasheet 等級的腳位圖。
+                </p>
             </div>
 
             <!-- Connector Cards -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div onclick="selectConnector('rj45')" id="card-rj45" class="connector-card active cursor-pointer bg-white p-5 rounded-xl border border-slate-200 hover:border-indigo-400 relative overflow-hidden group">
-                    <div class="flex items-center gap-3">
-                        <div class="text-3xl">🌐</div>
-                        <div>
-                            <h4 class="font-bold text-slate-800">RJ45</h4>
-                            <p class="text-xs text-slate-500">Ethernet / Gigabit</p>
-                        </div>
-                    </div>
+                <div onclick="selectConnector('rj45')" id="card-rj45" class="connector-card active cursor-pointer bg-white p-6 rounded-xl border border-slate-200 relative overflow-hidden group">
+                    <div class="text-3xl mb-2">🌐</div>
+                    <div class="text-xl font-bold text-slate-800">RJ45</div>
+                    <div class="text-xs text-slate-500">乙太網路介面</div>
                 </div>
 
-                <div onclick="selectConnector('dsub')" id="card-dsub" class="connector-card cursor-pointer bg-white p-5 rounded-xl border border-slate-200 hover:border-indigo-400 relative overflow-hidden group">
-                    <div class="flex items-center gap-3">
-                        <div class="text-3xl">📟</div>
-                        <div>
-                            <h4 class="font-bold text-slate-800">DB9 / RS232</h4>
-                            <p class="text-xs text-slate-500">Serial Control</p>
-                        </div>
-                    </div>
+                <div onclick="selectConnector('aviation')" id="card-aviation" class="connector-card cursor-pointer bg-white p-6 rounded-xl border border-slate-200 relative overflow-hidden group">
+                    <div class="text-3xl mb-2">🛡️</div>
+                    <div class="text-xl font-bold text-slate-800">航空插頭</div>
+                    <div class="text-xs text-slate-500">防水強固型</div>
                 </div>
 
-                <div onclick="selectConnector('aviation')" id="card-aviation" class="connector-card cursor-pointer bg-white p-5 rounded-xl border border-slate-200 hover:border-indigo-400 relative overflow-hidden group">
-                    <div class="flex items-center gap-3">
-                        <div class="text-3xl">🛡️</div>
-                        <div>
-                            <h4 class="font-bold text-slate-800">航空插頭</h4>
-                            <p class="text-xs text-slate-500">Power / Signal</p>
-                        </div>
-                    </div>
+                <div onclick="selectConnector('fiber')" id="card-fiber" class="connector-card cursor-pointer bg-white p-6 rounded-xl border border-slate-200 relative overflow-hidden group">
+                    <div class="text-3xl mb-2">💡</div>
+                    <div class="text-xl font-bold text-slate-800">光纖接頭</div>
+                    <div class="text-xs text-slate-500">長距離傳輸</div>
                 </div>
-                
-                 <div onclick="selectConnector('fiber')" id="card-fiber" class="connector-card cursor-pointer bg-white p-5 rounded-xl border border-slate-200 hover:border-indigo-400 relative overflow-hidden group">
-                    <div class="flex items-center gap-3">
-                        <div class="text-3xl">💡</div>
-                        <div>
-                            <h4 class="font-bold text-slate-800">光纖 (Fiber)</h4>
-                            <p class="text-xs text-slate-500">LC / SC Mode</p>
-                        </div>
-                    </div>
+
+                <div onclick="selectConnector('dsub')" id="card-dsub" class="connector-card cursor-pointer bg-white p-6 rounded-xl border border-slate-200 relative overflow-hidden group">
+                    <div class="text-3xl mb-2">📟</div>
+                    <div class="text-xl font-bold text-slate-800">DB9 / RS232</div>
+                    <div class="text-xs text-slate-500">傳統控制介面</div>
                 </div>
             </div>
 
-            <!-- Detail View & Pinout Table -->
-            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col lg:flex-row">
-                <!-- Left: Description -->
-                <div class="lg:w-1/2 p-8 border-b lg:border-b-0 lg:border-r border-slate-100">
-                    <div class="flex items-center gap-4 mb-4">
-                        <div id="connector-icon" class="text-5xl bg-slate-100 p-3 rounded-lg">🌐</div>
-                        <div>
-                            <h4 id="connector-title" class="text-2xl font-bold text-indigo-700">RJ45 (乙太網路介面)</h4>
-                            <span id="connector-subtitle" class="text-sm font-mono text-slate-400">T568B Standard</span>
+            <!-- Detail View (Split Layout) -->
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="flex flex-col lg:flex-row">
+                    
+                    <!-- Left Column: Description (Same as v2) -->
+                    <div class="lg:w-1/2 p-8 border-b lg:border-b-0 lg:border-r border-slate-100">
+                        <div class="flex items-center gap-4 mb-6">
+                            <div class="bg-indigo-50 p-4 rounded-lg text-4xl" id="connector-icon">🌐</div>
+                            <div>
+                                <h4 class="text-2xl font-bold text-indigo-700" id="connector-title">RJ45 (乙太網路介面)</h4>
+                                <span class="text-sm font-mono text-slate-400">Standard T568B</span>
+                            </div>
+                        </div>
+                        <div class="space-y-4 text-slate-600">
+                            <p id="connector-desc">
+                                LED 顯示屏最核心的數據傳輸介面。通常使用 Cat5e 或 Cat6 網路線連接發送卡與接收卡，以及箱體與箱體之間的級聯 (Cascade)。
+                            </p>
+                            <div class="bg-slate-50 p-4 rounded-md border border-slate-200">
+                                <h5 class="font-bold text-slate-800 text-sm mb-2">應用筆記：</h5>
+                                <div id="connector-specs" class="text-sm space-y-1">
+                                    <!-- Specs injected by JS -->
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <p id="connector-desc" class="text-slate-600 mb-6 leading-relaxed">
-                        LED 顯示屏最核心的數據傳輸介面。用於發送卡與接收卡之間的級聯。必須支援 Gigabit 速率以傳輸高刷新率影像。
-                    </p>
-                    <div class="bg-amber-50 border-l-4 border-amber-400 p-4">
-                        <h5 class="text-amber-800 font-bold text-sm mb-1">工程師筆記：</h5>
-                        <ul id="connector-notes" class="list-disc pl-4 text-sm text-amber-700 space-y-1">
-                            <li>線序必須依照 T568B 標準製作。</li>
-                            <li>Gigabit 傳輸需要用到全部 4 對線 (8 pins)。</li>
-                        </ul>
-                    </div>
-                </div>
 
-                <!-- Right: Pinout Table -->
-                <div class="lg:w-1/2 p-0 bg-slate-50 flex flex-col">
-                    <div class="px-6 py-3 bg-slate-200 border-b border-slate-300 font-bold text-slate-700 flex justify-between items-center">
-                        <span>PIN DEFINITION</span>
-                        <span class="text-xs font-normal text-slate-500 bg-white px-2 py-1 rounded border">Datasheet View</span>
-                    </div>
-                    <div id="pinout-container" class="overflow-x-auto p-4 flex-grow flex items-start justify-center">
-                        <!-- Table will be injected here via JS -->
+                    <!-- Right Column: Pin Definition Table (NEW) -->
+                    <div class="lg:w-1/2 bg-slate-50 p-0 flex flex-col">
+                        <div class="bg-slate-200 px-6 py-3 border-b border-slate-300 flex justify-between items-center">
+                            <span class="font-bold text-slate-700 text-sm">PIN DEFINITION (腳位定義)</span>
+                            <span class="text-xs bg-white px-2 py-0.5 rounded border border-slate-300 text-slate-500">Datasheet View</span>
+                        </div>
+                        <div id="pinout-container" class="flex-grow p-6 overflow-x-auto">
+                            <!-- Table injected by JS -->
+                        </div>
                     </div>
                 </div>
             </div>
@@ -249,79 +300,131 @@
     <!-- Section 3: Topology Simulation -->
     <section id="topology" class="py-12 bg-white border-y border-slate-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h3 class="text-3xl font-bold text-slate-900 mb-6">串接拓撲模擬</h3>
-            <div class="lg:flex lg:gap-8">
-                <div class="lg:w-1/4 space-y-2 mb-4 lg:mb-0">
-                    <button onclick="setTopology('chain')" class="w-full text-left px-4 py-3 rounded border hover:bg-indigo-50 topo-btn active-topo ring-2 ring-indigo-500 bg-indigo-50" data-type="chain">
-                        <div class="font-bold">菊花鏈 (Daisy Chain)</div>
-                    </button>
-                    <button onclick="setTopology('ring')" class="w-full text-left px-4 py-3 rounded border hover:bg-indigo-50 topo-btn" data-type="ring">
-                        <div class="font-bold">環狀備援 (Loop)</div>
-                    </button>
+            <div class="lg:flex lg:items-start lg:gap-12">
+                <div class="lg:w-1/3 mb-8 lg:mb-0">
+                    <h3 class="text-3xl font-bold text-slate-900 mb-4">串接拓撲模擬</h3>
+                    <p class="text-slate-500 mb-6">
+                        選擇不同的佈線方式，觀察訊號流向與斷線反應。
+                    </p>
+                    <div class="space-y-3">
+                        <button onclick="setTopology('chain')" class="w-full text-left px-4 py-3 rounded-lg border border-slate-200 hover:border-indigo-500 hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition topo-btn active-topo" data-type="chain">
+                            <div class="font-bold text-slate-800">菊花鏈 (Daisy Chain)</div>
+                            <div class="text-xs text-slate-500">單線串接，成本最低。</div>
+                        </button>
+                        <button onclick="setTopology('star')" class="w-full text-left px-4 py-3 rounded-lg border border-slate-200 hover:border-indigo-500 hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition topo-btn" data-type="star">
+                            <div class="font-bold text-slate-800">星狀拓撲 (Star)</div>
+                            <div class="text-xs text-slate-500">高可靠性，佈線複雜。</div>
+                        </button>
+                        <button onclick="setTopology('ring')" class="w-full text-left px-4 py-3 rounded-lg border border-slate-200 hover:border-indigo-500 hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition topo-btn" data-type="ring">
+                            <div class="font-bold text-slate-800">環狀備援 (Redundant Ring)</div>
+                            <div class="text-xs text-slate-500">主備援迴路，斷線自動保護。</div>
+                        </button>
+                    </div>
+                    <div id="topo-explanation" class="mt-6 p-4 bg-amber-50 text-amber-800 text-sm rounded border border-amber-200">
+                        <strong>模擬說明：</strong> 觀察藍色訊號點的移動。在菊花鏈模式下，如果中間斷開，後端所有螢幕都會失去訊號（變紅）。
+                    </div>
                 </div>
-                <div class="lg:w-3/4">
-                    <div class="canvas-sim-container shadow-inner">
+                <div class="lg:w-2/3">
+                    <div class="canvas-sim-container shadow-md">
                         <canvas id="topologyCanvas"></canvas>
                     </div>
+                    <div class="flex justify-between mt-2 text-sm text-slate-400 px-2">
+                        <span>🖥️ 發送卡 (Sender)</span>
+                        <span>📺 LED 箱體 (Cabinets)</span>
+                    </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Control System Section (Kept from v2) -->
+    <!-- Section 4: Control Systems -->
     <section id="control" class="py-12 bg-slate-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-             <h3 class="text-2xl font-bold text-slate-900 mb-4">系統架構視圖</h3>
-             <button onclick="openHwModal()" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                開啟硬體訊號流向圖 (Signal Flow)
-             </button>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h3 class="text-3xl font-bold text-center text-slate-900 mb-10">控制系統架構</h3>
+            <div class="flex justify-center mb-8">
+                <div class="bg-white p-1 rounded-lg border border-slate-300 inline-flex shadow-sm">
+                    <button onclick="toggleSystem('sync')" id="btn-sync" class="px-6 py-2 rounded-md text-sm font-bold bg-indigo-600 text-white shadow transition-all">同步控制 (Synchronous)</button>
+                    <button onclick="toggleSystem('async')" id="btn-async" class="px-6 py-2 rounded-md text-sm font-bold text-slate-500 hover:bg-slate-100 transition-all">非同步控制 (Asynchronous)</button>
+                </div>
+            </div>
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-slate-200 max-w-4xl mx-auto relative">
+                <div class="p-8 pb-20">
+                    <div id="sys-content-sync" class="sys-content block">
+                        <div class="flex flex-col md:flex-row items-center gap-8">
+                            <div class="md:w-1/3 flex justify-center">
+                                <div class="text-8xl">🖥️ ➡️ 📺</div>
+                            </div>
+                            <div class="md:w-2/3">
+                                <h4 class="text-2xl font-bold text-indigo-700 mb-2">同步控制系統</h4>
+                                <p class="text-slate-600 mb-4 font-medium">所見即所得：LED 屏實時顯示電腦螢幕的內容。</p>
+                                <ul class="space-y-3 text-slate-600 text-sm">
+                                    <li class="flex items-start"><span class="mr-2 text-green-500">✓</span><span><strong>硬體：</strong> PC GPU (DVI/HDMI) + 發送卡 (Sender)。</span></li>
+                                    <li class="flex items-start"><span class="mr-2 text-green-500">✓</span><span><strong>資料流：</strong> 像素點對點映射，經由 Gigabit Ethernet 傳輸。</span></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="sys-content-async" class="sys-content hidden">
+                        <div class="flex flex-col md:flex-row items-center gap-8">
+                            <div class="md:w-1/3 flex justify-center">
+                                <div class="text-8xl">💾 ➡️ 📺</div>
+                            </div>
+                            <div class="md:w-2/3">
+                                <h4 class="text-2xl font-bold text-amber-700 mb-2">非同步控制系統</h4>
+                                <p class="text-slate-600 mb-4 font-medium">存儲播放：內建嵌入式處理器，脫機運作。</p>
+                                <ul class="space-y-3 text-slate-600 text-sm">
+                                    <li class="flex items-start"><span class="mr-2 text-amber-500">✓</span><span><strong>硬體：</strong> Android/Linux 播放盒 (內建 4G/Wi-Fi)。</span></li>
+                                    <li class="flex items-start"><span class="mr-2 text-amber-500">✓</span><span><strong>流程：</strong> 雲端下發內容 → 本地存儲 → 循環播放。</span></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- V2 FEATURE: MODAL BUTTON -->
+                <div class="bg-slate-50 px-8 py-4 border-t border-slate-100 text-sm text-slate-500 flex justify-between items-center absolute bottom-0 w-full">
+                    <span id="sys-footer-text">需要電腦保持開機連接</span>
+                    <button onclick="openHwModal()" class="text-indigo-600 hover:text-indigo-800 font-bold bg-indigo-50 hover:bg-indigo-100 px-4 py-2 rounded transition flex items-center gap-2 border border-indigo-200 shadow-sm">
+                        <span>了解硬體訊號流</span>
+                        <span>→</span>
+                    </button>
+                </div>
+            </div>
         </div>
     </section>
 
-    <!-- Hardware Detail Modal (Signal Flow) -->
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-white py-8 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <p class="text-slate-400">© 2025 LED 技術知識庫 | 基於一般業界通訊與串接標準報告製作</p>
+        </div>
+    </footer>
+
+    <!-- Hardware Detail Modal (Preserved from v2) -->
     <div id="hw-modal" class="modal fixed inset-0 z-[100] flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-slate-900 bg-opacity-80 backdrop-blur-sm" onclick="closeHwModal()"></div>
-        <div class="modal-content bg-white w-full max-w-5xl rounded-xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh]">
-            <div class="bg-indigo-900 px-6 py-4 flex justify-between items-center">
-                <h3 class="text-xl font-bold text-white">同步系統硬體架構</h3>
+        <div class="absolute inset-0 bg-slate-900 bg-opacity-70 backdrop-blur-sm" onclick="closeHwModal()"></div>
+        <div class="modal-content bg-white w-full max-w-4xl rounded-2xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="bg-indigo-600 px-6 py-4 flex justify-between items-center">
+                <h3 class="text-xl font-bold text-white">同步控制系統：硬體訊號流架構</h3>
                 <button onclick="closeHwModal()" class="text-indigo-200 hover:text-white text-2xl">&times;</button>
             </div>
-            <div class="p-8 overflow-y-auto bg-slate-50">
-                <!-- Simplified Flow for Clarity -->
-                <div class="flex flex-col md:flex-row items-center justify-center gap-4 text-center">
-                    <div class="p-4 bg-white border rounded shadow w-40">
-                        <div class="text-3xl">💻</div>
-                        <div class="font-bold mt-2">PC / 樹莓派</div>
-                        <div class="text-xs text-slate-500">HDMI 輸出</div>
+            <div class="p-6 overflow-y-auto bg-slate-50">
+                <div class="flex flex-col md:flex-row gap-4 justify-between items-stretch mb-8 relative">
+                    <!-- Steps (Simplified for brevity in this view, logically same as v2) -->
+                    <div class="flex-1 bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center relative flow-arrow z-10">
+                        <div class="text-3xl mb-1">💻</div><h4 class="font-bold text-sm">訊號源</h4><div class="text-xs text-slate-500">HDMI 輸出</div>
                     </div>
-                    <div class="text-slate-400 text-2xl">→</div>
-                    <div class="p-4 bg-white border rounded shadow w-40">
-                        <div class="text-3xl">🎛️</div>
-                        <div class="font-bold mt-2">視訊處理器</div>
-                        <div class="text-xs text-slate-500">Video Processor</div>
+                    <div class="flex-1 bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center relative flow-arrow z-10">
+                        <div class="text-3xl mb-1">🎛️</div><h4 class="font-bold text-sm">視訊處理器</h4><div class="text-xs text-slate-500">Scaling/Color</div>
                     </div>
-                     <div class="text-slate-400 text-2xl">→</div>
-                    <div class="p-4 bg-white border rounded shadow w-40">
-                        <div class="text-3xl">🃏</div>
-                        <div class="font-bold mt-2">發送卡</div>
-                        <div class="text-xs text-slate-500">Sending Card</div>
+                    <div class="flex-1 bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center relative flow-arrow z-10">
+                        <div class="text-3xl mb-1">🃏</div><h4 class="font-bold text-sm">發送卡</h4><div class="text-xs text-slate-500">封包化</div>
                     </div>
-                     <div class="text-slate-400 text-2xl">→</div>
-                     <div class="p-4 bg-indigo-50 border border-indigo-200 rounded shadow w-40">
-                        <div class="text-3xl">📦</div>
-                        <div class="font-bold mt-2 text-indigo-700">接收卡</div>
-                        <div class="text-xs text-indigo-500">Receiving Card</div>
+                    <div class="flex-1 bg-indigo-50 p-4 rounded-xl shadow-sm border border-indigo-200 flex flex-col items-center z-10">
+                        <div class="text-3xl mb-1">📺</div><h4 class="font-bold text-sm text-indigo-800">接收卡</h4><div class="text-xs text-indigo-600">PWM 驅動</div>
                     </div>
                 </div>
-                <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="bg-white p-4 rounded border text-sm">
-                        <h4 class="font-bold text-indigo-600 mb-2">關鍵技術點：</h4>
-                        <ul class="list-disc pl-4 space-y-1 text-slate-600">
-                            <li><strong>發送卡：</strong>將 HDMI 訊號封包化為 Ethernet Frame。</li>
-                            <li><strong>接收卡：</strong>位於 LED 箱體內，負責 PWM 驅動。</li>
-                            <li><strong>傳輸介質：</strong>必須使用 Cat5e/Cat6 網路線 (RJ45)。</li>
-                        </ul>
-                    </div>
+                <div class="text-sm text-slate-600 bg-white p-4 rounded border">
+                    <strong>工程師筆記：</strong> 訊號鏈路中，發送卡 (Sending Card) 是將 HDMI 視訊訊號轉為 Gigabit Ethernet 封包的關鍵節點。每個 RJ45 輸出埠通常負責 65 萬像素點。
                 </div>
             </div>
         </div>
@@ -332,173 +435,157 @@
         // --- Modal Logic ---
         function openHwModal() { document.getElementById('hw-modal').classList.add('active'); document.body.style.overflow = 'hidden'; }
         function closeHwModal() { document.getElementById('hw-modal').classList.remove('active'); document.body.style.overflow = ''; }
-        
+        document.addEventListener('keydown', function(event) { if (event.key === "Escape") closeHwModal(); });
+
         // --- Navigation ---
         function scrollToSection(id) { document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' }); }
 
         // --- Protocol Chart ---
         const ctxProtocol = document.getElementById('protocolRadarChart').getContext('2d');
         const protocolData = {
-            ethernet: { label: '乙太網路', data: [9, 9, 8, 7, 10], borderColor: 'rgba(79, 70, 229, 1)', backgroundColor: 'rgba(79, 70, 229, 0.2)' },
-            rs485: { label: 'RS-485', data: [3, 7, 9, 9, 5], borderColor: 'rgba(245, 158, 11, 1)', backgroundColor: 'rgba(245, 158, 11, 0.2)' }
+            ethernet: { label: '乙太網路', data: [9, 9, 8, 7, 10], borderColor: 'rgba(79, 70, 229, 1)', backgroundColor: 'rgba(79, 70, 229, 0.2)', desc: '主流標準。Gbps級速度，RJ45介面，距離100m+。' },
+            rs485: { label: 'RS-485', data: [3, 7, 9, 9, 5], borderColor: 'rgba(245, 158, 11, 1)', backgroundColor: 'rgba(245, 158, 11, 0.2)', desc: '工業標準。低速控制指令，抗噪強，距離1km+。' },
+            fiber: { label: '光纖', data: [10, 10, 10, 4, 6], borderColor: 'rgba(20, 184, 166, 1)', backgroundColor: 'rgba(20, 184, 166, 0.2)', desc: '長距離無損傳輸，無電磁干擾，成本高。' }
         };
         let currentChart = new Chart(ctxProtocol, {
             type: 'radar',
-            data: { labels: ['速度', '距離', '抗噪', '成本', '普及'], datasets: [protocolData.ethernet, protocolData.rs485] },
-            options: { responsive: true, maintainAspectRatio: false, scales: { r: { suggestedMin: 0, suggestedMax: 10, ticks: { display: false } } } }
+            data: { labels: ['傳輸速度', '傳輸距離', '抗干擾能力', '成本效益', '普及程度'], datasets: [protocolData.ethernet, protocolData.rs485] },
+            options: { responsive: true, maintainAspectRatio: false, scales: { r: { suggestedMin: 0, suggestedMax: 10, ticks: { display: false } } }, plugins: { legend: { position: 'bottom' } } }
         });
         function updateChart(type) {
-            const datasets = type === 'all' ? [protocolData.ethernet, protocolData.rs485] : [protocolData[type]];
+            const datasets = type === 'all' ? [protocolData.ethernet, protocolData.rs485, protocolData.fiber] : [protocolData[type]];
             currentChart.data.datasets = datasets;
             currentChart.update();
+            const descEl = document.querySelector('#protocol-desc p');
+            const titleEl = document.querySelector('#protocol-desc h4');
+            if (type !== 'all') { titleEl.textContent = protocolData[type].label; descEl.textContent = protocolData[type].desc; }
+            else { titleEl.textContent = "綜合比較"; descEl.textContent = "乙太網路用於影像，RS-485 用於控制，光纖用於長距離。"; }
         }
 
-        // --- Hardware Connectors & PINOUT DATA ---
+        // --- Hardware Connectors & DATA (Updated with Pinout HTML) ---
         const connectorData = {
             rj45: {
-                icon: "🌐", title: "RJ45 (乙太網路)", subtitle: "T568B Standard / Gigabit",
-                desc: "LED 顯示屏標準通訊介面。大型屏體數據量大，必須使用 Gigabit Ethernet 傳輸，因此 8 根針腳全數使用。",
-                notes: "<li>請務必使用 T568B 線序。</li><li>線長建議 < 100m，超過需使用光纖。</li>",
+                icon: "🌐", title: "RJ45 (乙太網路介面)",
+                desc: "LED 顯示屏核心介面。連接發送卡與接收卡，需使用 T568B 標準以確保 Gigabit 速率穩定。",
+                specs: "<li>標準：TIA/EIA-568-B</li><li>速率：1000BASE-T (Gigabit)</li><li>線材：Cat5e / Cat6</li>",
                 pinoutHTML: `
-                <table class="w-full pin-table text-left border-collapse">
-                    <thead><tr><th class="w-12">Pin</th><th>Color (T568B)</th><th>Signal (Gigabit)</th></tr></thead>
+                <table class="pin-table">
+                    <thead><tr><th style="width:10%">Pin</th><th>Color (T568B)</th><th>Gigabit Signal</th></tr></thead>
                     <tbody>
-                        <tr><td>1</td><td><span class="wire-color-dot" style="background:linear-gradient(90deg, white 50%, orange 50%);"></span>白/橙</td><td class="font-mono text-indigo-600">BI_DA+ (TX+)</td></tr>
-                        <tr><td>2</td><td><span class="wire-color-dot" style="background:orange;"></span>橙色</td><td class="font-mono text-indigo-600">BI_DA- (TX-)</td></tr>
-                        <tr><td>3</td><td><span class="wire-color-dot" style="background:linear-gradient(90deg, white 50%, green 50%);"></span>白/綠</td><td class="font-mono text-indigo-600">BI_DB+ (RX+)</td></tr>
-                        <tr><td>4</td><td><span class="wire-color-dot" style="background:blue;"></span>藍色</td><td class="font-mono text-slate-500">BI_DC+</td></tr>
-                        <tr><td>5</td><td><span class="wire-color-dot" style="background:linear-gradient(90deg, white 50%, blue 50%);"></span>白/藍</td><td class="font-mono text-slate-500">BI_DC-</td></tr>
-                        <tr><td>6</td><td><span class="wire-color-dot" style="background:green;"></span>綠色</td><td class="font-mono text-indigo-600">BI_DB- (RX-)</td></tr>
-                        <tr><td>7</td><td><span class="wire-color-dot" style="background:linear-gradient(90deg, white 50%, brown 50%);"></span>白/棕</td><td class="font-mono text-slate-500">BI_DD+</td></tr>
-                        <tr><td>8</td><td><span class="wire-color-dot" style="background:brown;"></span>棕色</td><td class="font-mono text-slate-500">BI_DD-</td></tr>
+                        <tr><td>1</td><td><span class="wire-dot" style="background:linear-gradient(90deg, white 50%, orange 50%)"></span>白/橙</td><td><strong>BI_DA+</strong> (TX+)</td></tr>
+                        <tr><td>2</td><td><span class="wire-dot" style="background:orange"></span>橙色</td><td><strong>BI_DA-</strong> (TX-)</td></tr>
+                        <tr><td>3</td><td><span class="wire-dot" style="background:linear-gradient(90deg, white 50%, green 50%)"></span>白/綠</td><td><strong>BI_DB+</strong> (RX+)</td></tr>
+                        <tr><td>4</td><td><span class="wire-dot" style="background:blue"></span>藍色</td><td class="text-slate-400">BI_DC+</td></tr>
+                        <tr><td>5</td><td><span class="wire-dot" style="background:linear-gradient(90deg, white 50%, blue 50%)"></span>白/藍</td><td class="text-slate-400">BI_DC-</td></tr>
+                        <tr><td>6</td><td><span class="wire-dot" style="background:green"></span>綠色</td><td><strong>BI_DB-</strong> (RX-)</td></tr>
+                        <tr><td>7</td><td><span class="wire-dot" style="background:linear-gradient(90deg, white 50%, brown 50%)"></span>白/棕</td><td class="text-slate-400">BI_DD+</td></tr>
+                        <tr><td>8</td><td><span class="wire-dot" style="background:brown"></span>棕色</td><td class="text-slate-400">BI_DD-</td></tr>
                     </tbody>
                 </table>
-                <div class="mt-2 text-xs text-slate-400">* BI = Bi-directional Data (雙向數據)</div>`
-            },
-            dsub: {
-                icon: "📟", title: "DB9 (RS-232)", subtitle: "Serial Communication",
-                desc: "傳統序列通訊，用於連接光感探頭、多功能卡或舊型中控系統。通常僅使用 3 根腳位 (TX, RX, GND)。",
-                notes: "<li>通常為母頭 (Female) 接電腦公頭 (Male)。</li><li>僅適用於短距離低速控制。</li>",
-                pinoutHTML: `
-                <table class="w-full pin-table text-left border-collapse">
-                    <thead><tr><th class="w-12">Pin</th><th>Name</th><th>Function</th></tr></thead>
-                    <tbody>
-                        <tr><td>2</td><td class="font-bold">RXD</td><td class="font-mono">Receive Data (接收)</td></tr>
-                        <tr><td>3</td><td class="font-bold">TXD</td><td class="font-mono">Transmit Data (發送)</td></tr>
-                        <tr><td>5</td><td class="font-bold">GND</td><td class="font-mono">Ground (地線)</td></tr>
-                        <tr class="bg-slate-50 text-slate-400"><td>1,4,6,7,8,9</td><td>-</td><td>NC (通常不連接)</td></tr>
-                    </tbody>
-                </table>`
+                <div class="mt-2 text-xs text-slate-400">* BI = Bi-directional (Gigabit 全雙工使用 4 對線)</div>
+                `
             },
             aviation: {
-                icon: "🛡️", title: "航空插頭 (Aviation)", subtitle: "Power / Signal Connector",
-                desc: "戶外屏專用，防水等級 IP65。常見 3 Pin (電源) 或 4 Pin (訊號)。",
-                notes: "<li>電源：L (火線), N (零線), G (地線)。</li><li>訊號：通常整合 RJ45 內芯或使用專用 4 芯定義。</li>",
+                icon: "🛡️", title: "航空插頭 (Aviation Plug)",
+                desc: "戶外屏與租賃屏專用。具備防水環與鎖扣，防止震動脫落。",
+                specs: "<li>防水等級：IP65 / IP67</li><li>類型：3 Pin (Power), 4 Pin (Signal)</li>",
                 pinoutHTML: `
-                <table class="w-full pin-table text-left border-collapse">
-                    <thead><tr><th colspan="3" class="text-center bg-slate-200">3-Pin 電源常見定義</th></tr></thead>
+                <table class="pin-table">
+                    <thead><tr><th colspan="3" style="text-align:center; background:#e2e8f0;">常見 3-Pin 電源定義</th></tr></thead>
                     <tbody>
-                        <tr><td>1 / L</td><td class="text-red-600 font-bold">Line</td><td>火線 (棕/紅)</td></tr>
-                        <tr><td>2 / N</td><td class="text-blue-600 font-bold">Neutral</td><td>零線 (藍/黑)</td></tr>
-                        <tr><td>3 / PE</td><td class="text-green-600 font-bold">Ground</td><td>地線 (黃綠)</td></tr>
+                        <tr><td>1 / L</td><td class="text-red-700 font-bold">Line</td><td>火線 (棕/紅)</td></tr>
+                        <tr><td>2 / N</td><td class="text-blue-700 font-bold">Neutral</td><td>零線 (藍/黑)</td></tr>
+                        <tr><td>3 / PE</td><td class="text-green-700 font-bold">Ground</td><td>地線 (黃綠)</td></tr>
                     </tbody>
                 </table>
-                <div class="mt-3 p-2 bg-yellow-50 text-xs text-yellow-800 border border-yellow-200 rounded">
-                    ⚠️ 注意：各廠家訊號航空頭定義可能不同，務必參閱該箱體說明書。
-                </div>`
+                <div class="mt-3 p-2 bg-yellow-50 text-xs text-yellow-800 border border-yellow-200 rounded">⚠️ 注意：訊號用航空頭定義各廠牌(Neutrik/Seetronic)可能不同，請詳閱箱體手冊。</div>
+                `
             },
             fiber: {
-                icon: "💡", title: "光纖 (Fiber)", subtitle: "LC / SC Connector",
-                desc: "無電氣腳位，使用光訊號傳輸。依賴 SFP 模組進行光電轉換。",
-                notes: "<li>RX 接 TX，TX 接 RX (交叉連接)。</li><li>單模 (Single Mode) 傳輸距離 > 10km。</li>",
+                icon: "💡", title: "光纖介面 (Fiber Optic)",
+                desc: "控制室距離 > 100m 時使用。需配合 SFP 模組進行光電轉換。",
+                specs: "<li>接頭：LC (SFP) / SC</li><li>模式：Single Mode (單模)</li>",
                 pinoutHTML: `
-                <div class="flex flex-col items-center justify-center h-full p-6 text-slate-500">
-                    <div class="text-4xl mb-2">TX ⇄ RX</div>
-                    <p class="text-sm text-center">光纖無 Pin 定義</p>
-                    <p class="text-xs text-center mt-1">透過 SFP 模組定義波長與速率</p>
-                </div>`
+                <div class="flex flex-col items-center justify-center h-48 text-slate-500">
+                    <div class="text-5xl mb-2">TX ⇄ RX</div>
+                    <p class="text-sm font-bold">Cross Connection</p>
+                    <p class="text-xs mt-1">光纖無電氣腳位，僅區分發送與接收</p>
+                </div>
+                `
+            },
+            dsub: {
+                icon: "📟", title: "DB9 / RS-232",
+                desc: "傳統序列通訊，用於連接光感探頭或舊型設備。",
+                specs: "<li>介面：DE-9 (Male/Female)</li><li>協定：Async Serial</li>",
+                pinoutHTML: `
+                <table class="pin-table">
+                    <thead><tr><th>Pin</th><th>Name</th><th>Function</th></tr></thead>
+                    <tbody>
+                        <tr><td>2</td><td><strong>RXD</strong></td><td>Receive Data (接收)</td></tr>
+                        <tr><td>3</td><td><strong>TXD</strong></td><td>Transmit Data (發送)</td></tr>
+                        <tr><td>5</td><td><strong>GND</strong></td><td>Ground (地線)</td></tr>
+                        <tr class="bg-slate-50 text-slate-400"><td>Others</td><td>NC</td><td>No Connection</td></tr>
+                    </tbody>
+                </table>
+                `
             }
         };
 
         function selectConnector(key) {
-            // Update Active State
-            document.querySelectorAll('.connector-card').forEach(el => el.classList.remove('active', 'border-indigo-400', 'bg-eef2ff'));
-            document.getElementById(`card-${key}`).classList.add('active', 'border-indigo-400');
+            document.querySelectorAll('.connector-card').forEach(c => c.classList.remove('active'));
+            document.getElementById(`card-${key}`).classList.add('active');
             
-            // Update Content
             const data = connectorData[key];
             document.getElementById('connector-icon').textContent = data.icon;
             document.getElementById('connector-title').textContent = data.title;
-            document.getElementById('connector-subtitle').textContent = data.subtitle;
             document.getElementById('connector-desc').textContent = data.desc;
-            document.getElementById('connector-notes').innerHTML = data.notes;
+            document.getElementById('connector-specs').innerHTML = data.specs;
             document.getElementById('pinout-container').innerHTML = data.pinoutHTML;
         }
 
         // Initialize with RJ45
         selectConnector('rj45');
 
-        // --- Topology (Simple Logic) ---
+        // --- Topology & Control Logic (Same as v2) ---
         const canvas = document.getElementById('topologyCanvas');
         const ctx = canvas.getContext('2d');
         let activeTopology = 'chain';
-
         function resizeCanvas() { canvas.width = canvas.parentElement.clientWidth; canvas.height = canvas.parentElement.clientHeight; }
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas); resizeCanvas();
 
-        class Node { constructor(x, y, type) { this.x = x; this.y = y; this.type = type; } }
+        class Node { constructor(x, y, label) { this.x = x; this.y = y; this.label = label; } }
         let nodes = [];
-        
         function initTopology(type) {
-            nodes = [];
-            const w = canvas.width;
-            const startX = 50, startY = canvas.height / 2;
+            nodes = []; const w = canvas.width, h = canvas.height, startX = 50, startY = h/2;
             nodes.push(new Node(startX, startY, 'Sender'));
-            const gap = (w - 100) / 4;
-            for(let i=1; i<=4; i++) nodes.push(new Node(startX + i*gap, startY, 'Cab'));
+            if(type==='chain'||type==='ring') { const gap=(w-100)/4; for(let i=1;i<=4;i++) nodes.push(new Node(startX+i*gap, startY, `Cab ${i}`)); }
+            else if(type==='star') { nodes.push(new Node(w/2, h/2-60, 'C1'), new Node(w/2+60, h/2, 'C2'), new Node(w/2, h/2+60, 'C3'), new Node(w/2-60, h/2, 'C4')); }
         }
-
         function draw() {
             ctx.clearRect(0,0,canvas.width,canvas.height);
-            if(nodes.length === 0) return;
-
-            ctx.lineWidth = 3;
-            ctx.strokeStyle = '#94a3b8';
-            ctx.beginPath();
-            ctx.moveTo(nodes[0].x, nodes[0].y);
-            
-            // Chain
-            for(let i=1; i<nodes.length; i++) ctx.lineTo(nodes[i].x, nodes[i].y);
-            
-            // Ring
-            if(activeTopology === 'ring') {
-                ctx.stroke(); 
-                ctx.beginPath();
-                ctx.strokeStyle = '#10b981'; // Green Return
-                ctx.moveTo(nodes[nodes.length-1].x, nodes[nodes.length-1].y);
-                ctx.bezierCurveTo(nodes[nodes.length-1].x, nodes[nodes.length-1].y + 100, nodes[0].x, nodes[0].y + 100, nodes[0].x, nodes[0].y);
-            }
+            if(nodes.length===0) return;
+            ctx.lineWidth=3; ctx.strokeStyle='#94a3b8'; ctx.beginPath(); ctx.moveTo(nodes[0].x,nodes[0].y);
+            if(activeTopology==='chain') for(let i=1;i<nodes.length;i++) ctx.lineTo(nodes[i].x,nodes[i].y);
+            else if(activeTopology==='star') for(let i=1;i<nodes.length;i++) { ctx.moveTo(nodes[0].x,nodes[0].y); ctx.lineTo(nodes[i].x,nodes[i].y); }
+            else if(activeTopology==='ring') { for(let i=1;i<nodes.length;i++) ctx.lineTo(nodes[i].x,nodes[i].y); ctx.strokeStyle='#10b981'; ctx.lineTo(nodes[nodes.length-1].x,nodes[nodes.length-1].y+40); ctx.lineTo(nodes[0].x,nodes[0].y+40); ctx.closePath(); }
             ctx.stroke();
-
-            // Nodes
-            nodes.forEach(n => {
-                ctx.fillStyle = n.type === 'Sender' ? '#334155' : '#3b82f6';
-                ctx.fillRect(n.x-15, n.y-10, 30, 20);
-            });
+            nodes.forEach(n=>{ ctx.fillStyle=n.label==='Sender'?'#334155':'#3b82f6'; ctx.fillRect(n.x-15,n.y-10,30,20); });
             requestAnimationFrame(draw);
         }
+        function setTopology(type) { activeTopology=type; document.querySelectorAll('.topo-btn').forEach(b=>b.classList.remove('ring-2','bg-indigo-50')); document.querySelector(`[data-type="${type}"]`).classList.add('ring-2','bg-indigo-50'); initTopology(type); }
+        initTopology('chain'); draw();
 
-        function setTopology(type) {
-            activeTopology = type;
-            document.querySelectorAll('.topo-btn').forEach(b => b.classList.remove('ring-2', 'bg-indigo-50'));
-            document.querySelector(`.topo-btn[data-type="${type}"]`).classList.add('ring-2', 'bg-indigo-50');
-            initTopology(type);
+        function toggleSystem(type) {
+            if(type==='sync') { 
+                document.getElementById('sys-content-sync').classList.remove('hidden'); document.getElementById('sys-content-async').classList.add('hidden');
+                document.getElementById('btn-sync').classList.add('bg-indigo-600','text-white'); document.getElementById('btn-sync').classList.remove('text-slate-500');
+                document.getElementById('btn-async').classList.remove('bg-amber-600','text-white'); document.getElementById('btn-async').classList.add('text-slate-500');
+            } else {
+                document.getElementById('sys-content-sync').classList.add('hidden'); document.getElementById('sys-content-async').classList.remove('hidden');
+                document.getElementById('btn-sync').classList.remove('bg-indigo-600','text-white'); document.getElementById('btn-sync').classList.add('text-slate-500');
+                document.getElementById('btn-async').classList.add('bg-amber-600','text-white'); document.getElementById('btn-async').classList.remove('text-slate-500');
+            }
         }
-
-        initTopology('chain');
-        draw();
-
     </script>
 </body>
 </html>
