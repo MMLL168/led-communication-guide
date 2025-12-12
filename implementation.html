@@ -3,25 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RPi 5 LED Matrix | 工程實作指南 v5.3</title>
+    <title>RPi 5 LED Matrix | 工程實作指南 v6.6</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark-reasonable.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <script>hljs.highlightAll();</script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+
     <style>
         body { font-family: 'Noto Sans TC', sans-serif; background-color: #0f172a; color: #e2e8f0; }
         h1, h2, h3 { color: #f8fafc; font-weight: 700; }
         code { font-family: 'JetBrains Mono', monospace; }
+        
+        /* Navigation */
         .nav-item { display: block; padding: 0.75rem 1rem; margin-bottom: 0.25rem; border-radius: 0.375rem; color: #94a3b8; transition: all 0.2s; cursor: pointer; }
         .nav-item:hover, .nav-item.active { background-color: #1e293b; color: #38bdf8; border-left: 3px solid #38bdf8; }
-        .chip { fill: #1e293b; stroke: #cbd5e1; stroke-width: 2; }
-        .pin-label { font-size: 10px; font-family: 'JetBrains Mono', monospace; fill: #94a3b8; }
-        .wire { stroke: #64748b; stroke-width: 1.5; fill: none; stroke-linecap: round; }
+        
+        /* Schematic Styling */
+        .schematic-bg { background-color: #1e293b; border: 1px solid #334155; }
+        
+        /* Components */
+        .rpi-header { fill: #0f172a; stroke: #94a3b8; stroke-width: 2; }
+        .ic-body { fill: #1e293b; stroke: #cbd5e1; stroke-width: 2; rx: 4; }
+        .hub-body { fill: #334155; stroke: #94a3b8; stroke-width: 2; }
+        .panel-body { fill: #1e293b; stroke: #64748b; stroke-width: 2; }
+        .panel-label { font-family: 'JetBrains Mono'; font-weight: bold; fill: #cbd5e1; font-size: 16px; }
+        
+        /* Text */
+        .label-main { font-family: 'JetBrains Mono'; font-weight: bold; fill: #cbd5e1; font-size: 14px; }
+        .pin-num { font-family: 'JetBrains Mono'; font-size: 9px; fill: #94a3b8; font-weight: bold; }
+        
+        /* Wires */
+        .wire { fill: none; stroke-linecap: round; stroke-width: 1.5; }
+        .wire-3v3 { stroke: #38bdf8; stroke-opacity: 0.9; } 
+        .wire-5v { stroke: #4ade80; stroke-opacity: 0.9; }  
+        .wire-pwr { stroke: #ef4444; stroke-width: 2; } 
+        .wire-gnd { stroke: #3b82f6; stroke-width: 2; }
+        .wire-data { stroke: #fbbf24; stroke-width: 3; stroke-opacity: 0.9; fill: none; } /* Daisy Chain */
+        
+        /* Tables */
         .tech-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
         .tech-table th { text-align: left; padding: 0.75rem; background-color: #1e293b; color: #94a3b8; border-bottom: 1px solid #334155; font-family: 'JetBrains Mono'; }
         .tech-table td { padding: 0.75rem; border-bottom: 1px solid #334155; }
         .tech-table tr:hover { background-color: #1e293b; }
+        
         .badge { display: inline-block; padding: 0.125rem 0.375rem; font-size: 0.75rem; font-weight: 700; border-radius: 0.25rem; font-family: 'JetBrains Mono'; }
         .badge-warn { background-color: #7f1d1d; color: #fca5a5; }
         .badge-info { background-color: #1e3a8a; color: #93c5fd; }
@@ -29,165 +55,356 @@
 </head>
 <body class="flex h-screen overflow-hidden">
 
-    <aside class="w-64 bg-slate-950 border-r border-slate-800 flex flex-col hidden md:flex">
+    <!-- Sidebar -->
+    <aside class="w-72 bg-slate-950 border-r border-slate-800 flex flex-col hidden md:flex shrink-0">
         <div class="p-6">
-            <h1 class="text-xl text-white flex items-center gap-2"><span class="text-sky-500">⚡</span> RPi 5 Matrix</h1>
+            <h1 class="text-xl text-white flex items-center gap-2">
+                <span class="text-sky-500">⚡</span> RPi 5 Matrix
+            </h1>
             <p class="text-xs text-slate-500 mt-1">Direct Drive Implementation</p>
         </div>
+
         <div class="px-4 pb-6">
             <a href="index.html" class="flex items-center justify-center w-full px-4 py-2 text-sm font-bold text-slate-300 bg-slate-900 border border-slate-700 rounded hover:bg-slate-800 hover:text-white hover:border-slate-600 transition group">
                 <svg class="w-4 h-4 mr-2 group-hover:-translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
                 Back to Theory
             </a>
         </div>
-        <nav class="flex-1 px-4 overflow-y-auto">
+
+        <nav class="flex-1 px-4 overflow-y-auto space-y-1">
             <a onclick="scrollToSection('bom')" class="nav-item active">1. 硬體 BOM 表</a>
-            <a onclick="scrollToSection('schematic')" class="nav-item">2. 電路原理圖 (Fixed)</a>
-            <a onclick="scrollToSection('pinout')" class="nav-item">3. Pinout 定義</a>
-            <a onclick="scrollToSection('wiring')" class="nav-item">4. 物理佈線</a>
+            <a onclick="scrollToSection('schematic')" class="nav-item">2. 系統接線圖 (Full 6 Panels)</a>
+            <a onclick="scrollToSection('detailed-schematic')" class="nav-item text-sky-400 font-bold border-l-2 border-sky-500 bg-slate-900">3. 詳細電路原理 (Pin-to-Pin)</a>
+            <a onclick="scrollToSection('pinout')" class="nav-item">4. Pinout 定義</a>
             <a onclick="scrollToSection('firmware')" class="nav-item">5. 韌體程式碼</a>
             <a onclick="scrollToSection('checklist')" class="nav-item">6. 工程師檢核</a>
         </nav>
+        
+        <div class="p-4 border-t border-slate-800 text-[10px] text-slate-600 text-center">
+            Designed for Engineer Marlon<br>v6.6 Full System
+        </div>
     </aside>
 
-    <main class="flex-1 overflow-y-auto scroll-smooth">
-        <div class="max-w-5xl mx-auto p-8">
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto scroll-smooth bg-slate-900">
+        <div class="max-w-[1600px] mx-auto p-8"> 
+            
+            <!-- Mobile Back Button -->
+            <div class="md:hidden mb-6">
+                <a href="index.html" class="inline-flex items-center text-sky-400 hover:text-white">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                    Back to Guide
+                </a>
+            </div>
+
             <!-- Header -->
             <div class="mb-12 border-b border-slate-800 pb-8">
                 <h2 class="text-3xl text-white mb-4">RPi 5 All-in-One 直驅實作指南</h2>
-                <p class="text-slate-400">核心技術棧：<code class="text-sky-400">rpi-rgb-led-matrix</code> + <code class="text-sky-400">3x 74AHCT245</code>。</p>
+                <p class="text-slate-400 max-w-3xl">
+                    本文件包含 <strong class="text-sky-400">Pin-to-Pin 級別</strong> 的詳細佈線圖與 <strong class="text-amber-400">完整 6 片面板</strong> 的串接拓撲。
+                </p>
             </div>
 
             <!-- 1. BOM -->
             <section id="bom" class="mb-16">
-                <h3 class="text-xl text-sky-400 mb-6 flex items-center gap-2"><span class="text-2xl">01.</span> 硬體 BOM 表</h3>
-                <div class="bg-slate-900 rounded-lg border border-slate-800 overflow-hidden">
-                    <table class="tech-table">
-                        <thead><tr><th>Component</th><th>Spec</th><th>Notes</th></tr></thead>
+                <h3 class="text-xl text-sky-400 mb-6 font-bold flex items-center gap-2"><span class="text-2xl opacity-50">01.</span> 硬體 BOM 表</h3>
+                <div class="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
+                    <table class="tech-table w-full">
+                        <thead>
+                            <tr><th class="w-1/4">元件名稱</th><th class="w-1/4">規格要求</th><th class="w-1/2">工程師備註</th></tr>
+                        </thead>
                         <tbody>
-                            <tr><td class="font-bold text-white">Raspberry Pi 5</td><td>4GB</td><td>避免 GUI Swap 造成閃爍。</td></tr>
-                            <tr><td class="font-bold text-white">Logic Buffer</td><td>3x 74AHCT245</td><td><span class="badge badge-warn">AHCT ONLY</span> 3.3V 轉 5V TTL。</td></tr>
-                            <tr><td class="font-bold text-white">Power Supply</td><td>5V 40A</td><td>與 RPi 共地。</td></tr>
+                            <tr>
+                                <td class="font-bold text-white">Raspberry Pi 5</td>
+                                <td>4GB RAM</td>
+                                <td>主控核心。</td>
+                            </tr>
+                            <tr>
+                                <td class="font-bold text-white">Logic Buffer</td>
+                                <td><span class="text-red-400">74AHCT245</span> (3顆)</td>
+                                <td>Active HAT 核心，負責電位轉換。</td>
+                            </tr>
+                            <tr>
+                                <td class="font-bold text-white">Power Supply (PSU)</td>
+                                <td>5V 40A</td>
+                                <td>驅動 6 片面板 + RPi (需共地)。</td>
+                            </tr>
+                            <tr>
+                                <td class="font-bold text-white">LED 排線</td>
+                                <td>IDC-16 (16-pin)</td>
+                                <td>共需 6 條 (1條接RPi，5條接面板間)。</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
             </section>
 
-            <!-- 2. Schematic (REFACTORED) -->
+            <!-- 2. System Schematic (UPDATED: 6 PANELS FULL VIEW) -->
             <section id="schematic" class="mb-16">
-                <h3 class="text-xl text-sky-400 mb-6 flex items-center gap-2"><span class="text-2xl">02.</span> Active HAT 電路原理圖 (3-Chip Design)</h3>
+                <div class="flex justify-between items-end mb-6">
+                    <h3 class="text-xl text-sky-400 font-bold flex items-center gap-2"><span class="text-2xl opacity-50">02.</span> 系統接線圖 (Full 3x2 Array)</h3>
+                    <span class="text-xs text-slate-500 bg-slate-800 px-2 py-1 rounded border border-slate-700">左右捲動查看完整拓撲</span>
+                </div>
+                
                 <div class="bg-white rounded-lg p-4 overflow-x-auto shadow-xl">
-                    <svg width="850" height="500" viewBox="0 0 850 500">
+                    <svg width="1500" height="500" viewBox="0 0 1500 500">
                         <defs><pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 20 0 L 0 0 0 20" fill="none" stroke="#f1f5f9" stroke-width="1"/></pattern></defs>
                         <rect width="100%" height="100%" fill="url(#grid)" />
 
-                        <!-- RPi Header -->
+                        <!-- === LEGEND === -->
+                        <g transform="translate(50, 420)">
+                            <rect width="250" height="60" fill="white" stroke="#94a3b8" rx="4"/>
+                            <line x1="20" y1="20" x2="50" y2="20" class="wire-data"/><text x="60" y="24" font-size="10" fill="#1e293b">數據串聯 (Daisy Chain)</text>
+                            <line x1="20" y1="40" x2="50" y2="40" class="wire-pwr"/><text x="60" y="44" font-size="10" fill="#ef4444">5V 電源並聯 (Star)</text>
+                        </g>
+
+                        <!-- === RPi + HAT === -->
+                        <g transform="translate(50, 100)">
+                            <rect width="120" height="200" fill="#1e293b" rx="5"/>
+                            <text x="60" y="100" text-anchor="middle" fill="white" font-weight="bold">RPi + HAT</text>
+                            <text x="60" y="120" text-anchor="middle" fill="#94a3b8" font-size="10">Controller</text>
+                        </g>
+
+                        <!-- === PANELS (3x2 Layout - Rear View) === -->
+                        <g transform="translate(250, 50)">
+                            
+                            <!-- Panel 1 -->
+                            <g transform="translate(0, 0)">
+                                <rect width="200" height="120" class="panel-body" fill="#f1f5f9"/>
+                                <text x="100" y="60" text-anchor="middle" class="panel-label">Panel 1</text>
+                                <rect x="10" y="40" width="20" height="40" fill="#fbbf24"/><text x="20" y="35" font-size="10" text-anchor="middle">IN</text>
+                                <rect x="170" y="40" width="20" height="40" fill="#cbd5e1"/><text x="180" y="35" font-size="10" text-anchor="middle">OUT</text>
+                                <!-- Power -->
+                                <line x1="100" y1="0" x2="100" y2="-30" class="wire-pwr"/>
+                            </g>
+
+                            <!-- Panel 2 -->
+                            <g transform="translate(300, 0)">
+                                <rect width="200" height="120" class="panel-body" fill="#f1f5f9"/>
+                                <text x="100" y="60" text-anchor="middle" class="panel-label">Panel 2</text>
+                                <rect x="10" y="40" width="20" height="40" fill="#fbbf24"/><text x="20" y="35" font-size="10" text-anchor="middle">IN</text>
+                                <rect x="170" y="40" width="20" height="40" fill="#cbd5e1"/><text x="180" y="35" font-size="10" text-anchor="middle">OUT</text>
+                                <line x1="100" y1="0" x2="100" y2="-30" class="wire-pwr"/>
+                            </g>
+
+                            <!-- Panel 3 -->
+                            <g transform="translate(600, 0)">
+                                <rect width="200" height="120" class="panel-body" fill="#f1f5f9"/>
+                                <text x="100" y="60" text-anchor="middle" class="panel-label">Panel 3</text>
+                                <rect x="10" y="40" width="20" height="40" fill="#fbbf24"/><text x="20" y="35" font-size="10" text-anchor="middle">IN</text>
+                                <rect x="170" y="40" width="20" height="40" fill="#cbd5e1"/><text x="180" y="35" font-size="10" text-anchor="middle">OUT</text>
+                                <line x1="100" y1="0" x2="100" y2="-30" class="wire-pwr"/>
+                            </g>
+
+                            <!-- Panel 4 (Below P3 - U Turn) -->
+                            <g transform="translate(600, 200)">
+                                <rect width="200" height="120" class="panel-body" fill="#f1f5f9"/>
+                                <text x="100" y="60" text-anchor="middle" class="panel-label">Panel 4</text>
+                                <rect x="170" y="40" width="20" height="40" fill="#fbbf24"/><text x="180" y="35" font-size="10" text-anchor="middle">IN</text> <!-- Signal enters from right -->
+                                <rect x="10" y="40" width="20" height="40" fill="#cbd5e1"/><text x="20" y="35" font-size="10" text-anchor="middle">OUT</text>
+                                <line x1="100" y1="120" x2="100" y2="150" class="wire-pwr"/>
+                            </g>
+
+                            <!-- Panel 5 -->
+                            <g transform="translate(300, 200)">
+                                <rect width="200" height="120" class="panel-body" fill="#f1f5f9"/>
+                                <text x="100" y="60" text-anchor="middle" class="panel-label">Panel 5</text>
+                                <rect x="170" y="40" width="20" height="40" fill="#fbbf24"/><text x="180" y="35" font-size="10" text-anchor="middle">IN</text>
+                                <rect x="10" y="40" width="20" height="40" fill="#cbd5e1"/><text x="20" y="35" font-size="10" text-anchor="middle">OUT</text>
+                                <line x1="100" y1="120" x2="100" y2="150" class="wire-pwr"/>
+                            </g>
+
+                            <!-- Panel 6 -->
+                            <g transform="translate(0, 200)">
+                                <rect width="200" height="120" class="panel-body" fill="#f1f5f9"/>
+                                <text x="100" y="60" text-anchor="middle" class="panel-label">Panel 6</text>
+                                <rect x="170" y="40" width="20" height="40" fill="#fbbf24"/><text x="180" y="35" font-size="10" text-anchor="middle">IN</text>
+                                <rect x="10" y="40" width="20" height="40" fill="#cbd5e1"/><text x="20" y="35" font-size="10" text-anchor="middle">OUT</text>
+                                <line x1="100" y1="120" x2="100" y2="150" class="wire-pwr"/>
+                            </g>
+
+                            <!-- DATA WIRING (YELLOW) -->
+                            <!-- RPi to P1 -->
+                            <path d="M -80 90 L -40 90 L -40 90 L 10 90" class="wire-data"/>
+
+                            <!-- P1 to P2 -->
+                            <path d="M 190 90 L 310 90" class="wire-data"/>
+
+                            <!-- P2 to P3 -->
+                            <path d="M 490 90 L 610 90" class="wire-data"/>
+
+                            <!-- P3 to P4 (U-Turn Down) -->
+                            <path d="M 790 90 L 850 90 L 850 240 L 790 240" class="wire-data"/>
+
+                            <!-- P4 to P5 (Right to Left) -->
+                            <path d="M 610 240 L 490 240" class="wire-data"/>
+
+                            <!-- P5 to P6 -->
+                            <path d="M 310 240 L 190 240" class="wire-data"/>
+
+                            <!-- POWER WIRING (RED BUS) -->
+                            <!-- Top Rail -->
+                            <line x1="100" y1="-30" x2="700" y2="-30" class="wire-pwr"/>
+                            <text x="710" y="-25" font-size="12" fill="#ef4444" font-weight="bold">To PSU V+</text>
+                            
+                            <!-- Bottom Rail -->
+                            <line x1="100" y1="350" x2="700" y2="350" class="wire-pwr"/>
+                            <text x="710" y="355" font-size="12" fill="#ef4444" font-weight="bold">To PSU V+</text>
+
+                        </g>
+                    </svg>
+                </div>
+                <p class="text-sm text-slate-500 mt-2 text-center">* U 型走線 (S-Mapper)：P1->P2->P3 (右移), P3->P4 (下折), P4->P5->P6 (左移)。此邏輯需在 Python 程式中設定。</p>
+            </section>
+
+            <!-- 3. DETAILED SCHEMATIC (Pin-to-Pin) - PRESERVED v6.5 -->
+            <section id="detailed-schematic" class="mb-16">
+                <div class="flex justify-between items-end mb-6">
+                    <h3 class="text-xl text-sky-400 font-bold flex items-center gap-2"><span class="text-2xl opacity-50">03.</span> 詳細電路原理圖 (Pin-to-Pin)</h3>
+                    <span class="text-xs text-slate-500 bg-slate-800 px-2 py-1 rounded">晶片腳位細節</span>
+                </div>
+                
+                <div class="schematic-bg rounded-lg p-6 overflow-x-auto shadow-xl border border-slate-700">
+                    <svg width="1200" height="1100" viewBox="0 0 1200 1100">
+                        <!-- ... (SVG Content identical to v6.5, omitted for brevity but guaranteed to be here) ... -->
+                         <!-- Grid -->
+                        <defs><pattern id="grid-d" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 20 0 L 0 0 0 20" fill="none" stroke="#334155" stroke-width="1"/></pattern><marker id="arrow" markerWidth="4" markerHeight="4" refX="2" refY="2" orient="auto"><polygon points="0,0 4,2 0,4" fill="#94a3b8" /></marker></defs>
+                        <rect width="100%" height="100%" fill="url(#grid-d)" />
+
+                        <!-- Header Labels -->
+                        <text x="100" y="30" text-anchor="middle" class="label-main">SOURCE (3.3V)</text>
+                        <text x="600" y="30" text-anchor="middle" class="label-main">BUFFER / SHIFTER (3.3V -> 5V)</text>
+                        <text x="1100" y="30" text-anchor="middle" class="label-main">OUTPUT (5V TTL)</text>
+
+                        <!-- === LEFT COLUMN: RPi GPIO === -->
                         <g transform="translate(50, 50)">
-                            <rect width="100" height="400" class="chip" />
-                            <text x="50" y="-10" text-anchor="middle" font-weight="bold" fill="#334155">RPi GPIO (3.3V)</text>
-                            <text x="10" y="30" class="pin-label">3.3V</text>
-                            <text x="10" y="380" class="pin-label">GND</text>
-                            <text x="90" y="80" text-anchor="end" class="pin-label">RGB Data</text>
-                            <text x="90" y="200" text-anchor="end" class="pin-label">Address (A-E)</text>
-                            <text x="90" y="320" text-anchor="end" class="pin-label">Ctrl (CLK/LAT)</text>
+                            <rect width="100" height="1000" class="rpi-header"/>
+                            <text x="50" y="20" text-anchor="middle" fill="#cbd5e1" font-weight="bold">RPi Header</text>
+                            <text x="110" y="60" text-anchor="end" class="pin-num" fill="#ef4444">Pin 2/4 (5V)</text>
+                            <line x1="120" y1="55" x2="200" y2="55" class="wire-pwr"/>
+                            <text x="110" y="950" text-anchor="end" class="pin-num" fill="#3b82f6">Pin 6/9.. (GND)</text>
+                            <line x1="120" y1="945" x2="200" y2="945" class="wire-gnd"/>
+                            <text x="110" y="100" text-anchor="end" class="pin-num">P29 (GP5)</text> <line x1="120" y="97" x2="250" y2="97" class="wire-3v3"/>
+                            <text x="110" y="130" text-anchor="end" class="pin-num">P33 (GP13)</text><line x1="120" y="127" x2="250" y2="127" class="wire-3v3"/>
+                            <text x="110" y="160" text-anchor="end" class="pin-num">P31 (GP6)</text> <line x1="120" y="157" x2="250" y2="157" class="wire-3v3"/>
+                            <text x="110" y="190" text-anchor="end" class="pin-num">P32 (GP12)</text><line x1="120" y="187" x2="250" y2="187" class="wire-3v3"/>
+                            <text x="110" y="220" text-anchor="end" class="pin-num">P36 (GP16)</text><line x1="120" y="217" x2="250" y2="217" class="wire-3v3"/>
+                            <text x="110" y="250" text-anchor="end" class="pin-num">P16 (GP23)</text><line x1="120" y="247" x2="250" y2="247" class="wire-3v3"/>
+                            <text x="110" y="400" text-anchor="end" class="pin-num">P15 (GP22)</text><line x1="120" y="397" x2="250" y2="447" class="wire-3v3"/>
+                            <text x="110" y="430" text-anchor="end" class="pin-num">P37 (GP26)</text><line x1="120" y="427" x2="250" y2="467" class="wire-3v3"/>
+                            <text x="110" y="460" text-anchor="end" class="pin-num">P13 (GP27)</text><line x1="120" y="457" x2="250" y2="487" class="wire-3v3"/>
+                            <text x="110" y="490" text-anchor="end" class="pin-num">P38 (GP20)</text><line x1="120" y="487" x2="250" y2="507" class="wire-3v3"/>
+                            <text x="110" y="520" text-anchor="end" class="pin-num">P40 (GP21)</text><line x1="120" y="517" x2="250" y2="527" class="wire-3v3"/>
+                            <text x="110" y="700" text-anchor="end" class="pin-num">P11 (GP17)</text><line x1="120" y="697" x2="250" y2="797" class="wire-3v3"/>
+                            <text x="110" y="730" text-anchor="end" class="pin-num">P07 (GP4)</text>  <line x1="120" y="727" x2="250" y2="817" class="wire-3v3"/>
+                            <text x="110" y="760" text-anchor="end" class="pin-num">P12 (GP18)</text> <line x1="120" y="757" x2="250" y2="837" class="wire-3v3"/>
                         </g>
 
-                        <!-- U1: Data Buffer -->
-                        <g transform="translate(300, 50)">
-                            <rect width="120" height="100" class="chip" />
-                            <text x="60" y="-10" text-anchor="middle" font-weight="bold" fill="#334155">U1: 74AHCT245</text>
-                            <text x="60" y="50" text-anchor="middle" font-size="10" fill="#64748b">RGB Data (R1..B2)</text>
-                            <line x1="-150" y1="50" x2="0" y2="50" class="wire" stroke-dasharray="4" />
+                        <!-- U1 -->
+                        <g transform="translate(450, 70)">
+                            <rect width="300" height="230" class="ic-body"/>
+                            <text x="150" y="25" text-anchor="middle" class="label-main">U1: 74AHCT245 (RGB)</text>
+                            <text x="20" y="45" class="pin-num" fill="#cbd5e1">1(DIR) -> 5V</text>
+                            <text x="20" y="215" class="pin-num" fill="#cbd5e1">19(OE) -> GND</text>
+                            <text x="280" y="45" text-anchor="end" class="pin-num" fill="#ef4444">20(VCC)</text>
+                            <text x="280" y="215" text-anchor="end" class="pin-num" fill="#3b82f6">10(GND)</text>
+                            <text x="10" y="80" class="pin-num">2</text> <line x1="0" y1="77" x2="-350" y2="77" class="wire-3v3"/>
+                            <text x="10" y="110" class="pin-num">3</text> <line x1="0" y1="107" x2="-350" y2="107" class="wire-3v3"/>
+                            <text x="10" y="140" class="pin-num">4</text> <line x1="0" y1="137" x2="-350" y2="137" class="wire-3v3"/>
+                            <text x="10" y="170" class="pin-num">5</text> <line x1="0" y1="167" x2="-350" y2="167" class="wire-3v3"/>
+                            <text x="10" y="190" class="pin-num">6</text> <line x1="0" y1="187" x2="-350" y2="187" class="wire-3v3"/>
+                            <text x="10" y="210" class="pin-num">7</text> <line x1="0" y1="207" x2="-350" y2="207" class="wire-3v3"/>
+                            <text x="290" y="80" text-anchor="end" class="pin-num">18</text> <line x1="300" y1="77" x2="600" y2="77" class="wire-5v"/>
+                            <text x="290" y="110" text-anchor="end" class="pin-num">17</text> <line x1="300" y1="107" x2="600" y2="107" class="wire-5v"/>
+                            <text x="290" y="140" text-anchor="end" class="pin-num">16</text> <line x1="300" y1="137" x2="600" y2="137" class="wire-5v"/>
+                            <text x="290" y="170" text-anchor="end" class="pin-num">15</text> <line x1="300" y1="167" x2="600" y2="167" class="wire-5v"/>
+                            <text x="290" y="190" text-anchor="end" class="pin-num">14</text> <line x1="300" y1="187" x2="600" y2="187" class="wire-5v"/>
+                            <text x="290" y="210" text-anchor="end" class="pin-num">13</text> <line x1="300" y1="207" x2="600" y2="207" class="wire-5v"/>
                         </g>
 
-                        <!-- U2: Address Buffer -->
-                        <g transform="translate(300, 180)">
-                            <rect width="120" height="100" class="chip" />
-                            <text x="60" y="-10" text-anchor="middle" font-weight="bold" fill="#334155">U2: 74AHCT245</text>
-                            <text x="60" y="50" text-anchor="middle" font-size="10" fill="#64748b">Addr (A,B,C,D,E)</text>
-                            <line x1="-150" y1="50" x2="0" y2="50" class="wire" stroke-dasharray="4" />
+                        <!-- U2 -->
+                        <g transform="translate(450, 370)">
+                            <rect width="300" height="200" class="ic-body"/>
+                            <text x="150" y="25" text-anchor="middle" class="label-main">U2: 74AHCT245 (Addr)</text>
+                            <text x="10" y="80" class="pin-num">2</text> <line x1="0" y1="77" x2="-350" y2="77" class="wire-3v3"/>
+                            <text x="10" y="110" class="pin-num">3</text> <line x1="0" y1="107" x2="-350" y2="107" class="wire-3v3"/>
+                            <text x="10" y="140" class="pin-num">4</text> <line x1="0" y1="137" x2="-350" y2="137" class="wire-3v3"/>
+                            <text x="10" y="170" class="pin-num">5</text> <line x1="0" y1="167" x2="-350" y2="167" class="wire-3v3"/>
+                            <text x="10" y="190" class="pin-num">6</text> <line x1="0" y1="187" x2="-350" y2="187" class="wire-3v3"/>
+                            <text x="290" y="80" text-anchor="end" class="pin-num">18</text> <line x1="300" y1="77" x2="600" y2="260" class="wire-5v"/>
+                            <text x="290" y="110" text-anchor="end" class="pin-num">17</text> <line x1="300" y1="107" x2="600" y2="280" class="wire-5v"/>
+                            <text x="290" y="140" text-anchor="end" class="pin-num">16</text> <line x1="300" y1="137" x2="600" y2="300" class="wire-5v"/>
+                            <text x="290" y="170" text-anchor="end" class="pin-num">15</text> <line x1="300" y1="167" x2="600" y2="320" class="wire-5v"/>
+                            <text x="290" y="190" text-anchor="end" class="pin-num">14</text> <line x1="300" y1="187" x2="600" y2="340" class="wire-5v"/>
                         </g>
 
-                        <!-- U3: Control Buffer -->
-                        <g transform="translate(300, 310)">
-                            <rect width="120" height="100" class="chip" />
-                            <text x="60" y="-10" text-anchor="middle" font-weight="bold" fill="#334155">U3: 74AHCT245</text>
-                            <text x="60" y="50" text-anchor="middle" font-size="10" fill="#64748b">Ctrl (CLK, LAT, OE)</text>
-                            <line x1="-150" y1="50" x2="0" y2="50" class="wire" stroke-dasharray="4" />
+                        <!-- U3 -->
+                        <g transform="translate(450, 670)">
+                            <rect width="300" height="150" class="ic-body"/>
+                            <text x="150" y="25" text-anchor="middle" class="label-main">U3: 74AHCT245 (Ctrl)</text>
+                            <text x="10" y="80" class="pin-num">2</text> <line x1="0" y1="77" x2="-350" y2="77" class="wire-3v3"/> 
+                            <text x="10" y="110" class="pin-num">3</text> <line x1="0" y1="107" x2="-350" y2="107" class="wire-3v3"/> 
+                            <text x="10" y="140" class="pin-num">4</text> <line x1="0" y1="137" x2="-350" y2="137" class="wire-3v3"/> 
+                            <text x="290" y="80" text-anchor="end" class="pin-num">18</text> <line x1="300" y1="77" x2="600" y2="120" class="wire-5v"/>
+                            <text x="290" y="110" text-anchor="end" class="pin-num">17</text> <line x1="300" y1="107" x2="600" y2="140" class="wire-5v"/>
+                            <text x="290" y="140" text-anchor="end" class="pin-num">16</text> <line x1="300" y1="137" x2="600" y2="160" class="wire-5v"/>
                         </g>
 
-                        <!-- HUB75 Output -->
-                        <g transform="translate(650, 100)">
-                            <rect width="100" height="300" class="chip" />
-                            <text x="50" y="-10" text-anchor="middle" font-weight="bold" fill="#334155">HUB75 (5V TTL)</text>
-                            <!-- Pins -->
-                            <text x="10" y="30" class="pin-label">R1 / G1 / B1</text>
-                            <text x="10" y="50" class="pin-label">R2 / G2 / B2</text>
-                            <text x="10" y="150" class="pin-label">A / B / C / D / E</text>
-                            <text x="10" y="250" class="pin-label">CLK / LAT / OE</text>
-                            <text x="10" y="280" class="pin-label" fill="blue">GND</text>
+                        <!-- HUB75 -->
+                        <g transform="translate(1050, 100)">
+                            <rect width="100" height="850" class="hub-body"/>
+                            <text x="50" y="30" text-anchor="middle" class="chip-label">HUB75 IDC-16</text>
+                            <text x="10" y="50" class="pin-num" fill="white">1 (R1)</text>
+                            <text x="90" y="70" text-anchor="end" class="pin-num" fill="white">2 (G1)</text>
+                            <text x="10" y="90" class="pin-num" fill="white">3 (B1)</text>
+                            <text x="90" y="110" text-anchor="end" class="pin-num" fill="#3b82f6">4 (GND)</text>
+                            <text x="10" y="130" class="pin-num" fill="white">5 (R2)</text>
+                            <text x="90" y="150" text-anchor="end" class="pin-num" fill="white">6 (G2)</text>
+                            <text x="10" y="170" class="pin-num" fill="white">7 (B2)</text>
+                            <text x="90" y="190" text-anchor="end" class="pin-num" fill="white">8 (E)</text>
+                            <text x="10" y="540" class="pin-num" fill="white">9 (A)</text>
+                            <text x="90" y="560" text-anchor="end" class="pin-num" fill="white">10 (B)</text>
+                            <text x="10" y="580" class="pin-num" fill="white">11 (C)</text>
+                            <text x="90" y="600" text-anchor="end" class="pin-num" fill="white">12 (D)</text>
+                            <text x="10" y="690" class="pin-num" fill="#fbbf24">13 (CLK)</text>
+                            <text x="90" y="710" text-anchor="end" class="pin-num" fill="#fbbf24">14 (LAT)</text>
+                            <text x="10" y="730" class="pin-num" fill="#fbbf24">15 (OE)</text>
+                            <text x="90" y="750" text-anchor="end" class="pin-num" fill="#3b82f6">16 (GND)</text>
                         </g>
-
-                        <!-- Connecting Wires (3.3V -> 5V Logic) -->
-                        <!-- U1 to HUB -->
-                        <line x1="420" y1="100" x2="650" y2="130" class="wire" />
-                        <text x="535" y="110" font-size="10" fill="#64748b">5V Logic</text>
-
-                        <!-- U2 to HUB -->
-                        <line x1="420" y1="230" x2="650" y2="230" class="wire" />
-
-                        <!-- U3 to HUB -->
-                        <line x1="420" y1="360" x2="650" y2="330" class="wire" />
-
-                        <!-- Power Rails -->
-                        <line x1="360" y1="50" x2="360" y2="20" class="wire pwr" stroke-width="3" /><text x="365" y="15" font-size="12" fill="#ef4444" font-weight="bold">5V</text>
-                        <line x1="360" y1="410" x2="360" y2="440" class="wire gnd" stroke-width="3" /><text x="365" y="455" font-size="12" fill="#3b82f6" font-weight="bold">GND</text>
-                        
-                        <!-- Decoupling Cap Hints -->
-                        <circle cx="310" cy="60" r="3" fill="#fbbf24" /><text x="295" y="45" font-size="8" fill="#d97706">0.1uF</text>
-                        <circle cx="310" cy="190" r="3" fill="#fbbf24" />
-                        <circle cx="310" cy="320" r="3" fill="#fbbf24" />
 
                     </svg>
                 </div>
-                <p class="text-sm text-slate-500 mt-2 text-center">* 修正：採用 3 顆 IC 架構，分別處理 Data、Address 與 Control 訊號，降低串擾。</p>
             </section>
 
-            <!-- 3. Pinout -->
+            <!-- 4. Pinout Definition -->
             <section id="pinout" class="mb-16">
-                <h3 class="text-xl text-sky-400 mb-6 flex items-center gap-2"><span class="text-2xl">03.</span> Pinout 定義</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div class="bg-slate-900 rounded-lg border border-slate-800 p-4">
-                        <h4 class="text-white font-bold mb-4 border-b border-slate-700 pb-2">DATA (U1 負責)</h4>
-                        <table class="tech-table">
-                            <thead><tr><th>Signal</th><th>RPi GPIO</th><th>Pin #</th></tr></thead>
-                            <tbody>
-                                <tr><td>R1</td><td>GPIO 5</td><td>29</td></tr>
-                                <tr><td>G1</td><td>GPIO 13</td><td>33</td></tr>
-                                <tr><td>B1</td><td>GPIO 6</td><td>31</td></tr>
-                                <tr><td>R2</td><td>GPIO 12</td><td>32</td></tr>
-                                <tr><td>G2</td><td>GPIO 16</td><td>36</td></tr>
-                                <tr><td>B2</td><td>GPIO 23</td><td>16</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="bg-slate-900 rounded-lg border border-slate-800 p-4">
-                        <h4 class="text-white font-bold mb-4 border-b border-slate-700 pb-2">CTRL (U3 負責)</h4>
-                        <table class="tech-table">
-                            <thead><tr><th>Signal</th><th>RPi GPIO</th><th>Pin #</th></tr></thead>
-                            <tbody>
-                                <tr><td>CLK</td><td>GPIO 17</td><td>11</td></tr>
-                                <tr><td>LAT</td><td>GPIO 4</td><td>7</td></tr>
-                                <tr><td>OE</td><td>GPIO 18</td><td>12</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
+                <h3 class="text-xl text-sky-400 mb-6 flex items-center gap-2"><span class="text-2xl opacity-50">04.</span> Pinout 定義 (Netlist)</h3>
+                <div class="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
+                    <table class="tech-table w-full">
+                        <thead><tr><th>HUB75 Signal</th><th>RPi GPIO (BCM)</th><th>RPi Physical Pin</th><th>負責晶片</th></tr></thead>
+                        <tbody>
+                            <tr><td class="text-red-400 font-bold">R1 (Pin 1)</td><td>GPIO 5</td><td>Pin 29</td><td>U1</td></tr>
+                            <tr><td class="text-green-400 font-bold">G1 (Pin 2)</td><td>GPIO 13</td><td>Pin 33</td><td>U1</td></tr>
+                            <tr><td class="text-blue-400 font-bold">B1 (Pin 3)</td><td>GPIO 6</td><td>Pin 31</td><td>U1</td></tr>
+                            <tr><td class="text-red-400 font-bold">R2 (Pin 5)</td><td>GPIO 12</td><td>Pin 32</td><td>U1</td></tr>
+                            <tr><td class="text-green-400 font-bold">G2 (Pin 6)</td><td>GPIO 16</td><td>Pin 36</td><td>U1</td></tr>
+                            <tr><td class="text-blue-400 font-bold">B2 (Pin 7)</td><td>GPIO 23</td><td>Pin 16</td><td>U1</td></tr>
+                            <tr><td class="text-white font-bold">A (Pin 9)</td><td>GPIO 22</td><td>Pin 15</td><td>U2</td></tr>
+                            <tr><td class="text-white font-bold">B (Pin 10)</td><td>GPIO 26</td><td>Pin 37</td><td>U2</td></tr>
+                            <tr><td class="text-white font-bold">C (Pin 11)</td><td>GPIO 27</td><td>Pin 13</td><td>U2</td></tr>
+                            <tr><td class="text-white font-bold">D (Pin 12)</td><td>GPIO 20</td><td>Pin 38</td><td>U2</td></tr>
+                            <tr><td class="text-white font-bold">E (Pin 8)</td><td>GPIO 21</td><td>Pin 40</td><td>U2</td></tr>
+                            <tr><td class="text-yellow-400 font-bold">CLK (Pin 13)</td><td>GPIO 17</td><td>Pin 11</td><td>U3</td></tr>
+                            <tr><td class="text-yellow-400 font-bold">LAT (Pin 14)</td><td>GPIO 4</td><td>Pin 7</td><td>U3</td></tr>
+                            <tr><td class="text-yellow-400 font-bold">OE (Pin 15)</td><td>GPIO 18</td><td>Pin 12</td><td>U3</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </section>
 
-            <!-- 4. Wiring -->
+            <!-- 5. Wiring -->
             <section id="wiring" class="mb-16">
-                <h3 class="text-xl text-sky-400 mb-6 flex items-center gap-2"><span class="text-2xl">04.</span> 物理佈線</h3>
+                <h3 class="text-xl text-sky-400 mb-6 flex items-center gap-2"><span class="text-2xl opacity-50">05.</span> 物理佈線</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
                         <h4 class="text-lg font-bold text-amber-400 mb-2">數據：U 型菊花鏈</h4>
@@ -200,26 +417,36 @@
                 </div>
             </section>
 
-            <!-- 5. Firmware Code -->
+            <!-- 6. Firmware Code -->
             <section id="firmware" class="mb-16">
-                <h3 class="text-xl text-sky-400 mb-6 flex items-center gap-2"><span class="text-2xl">05.</span> 韌體程式碼</h3>
-                <pre><code class="language-python rounded-lg shadow-lg text-sm"># ... (Code identical to v5.2, omitted for brevity) ...
+                <h3 class="text-xl text-sky-400 mb-6 flex items-center gap-2"><span class="text-2xl opacity-50">06.</span> 韌體程式碼</h3>
+                <pre><code class="language-python rounded-lg shadow-lg text-sm"># ... 設定 U 型映射 (Mapping for Serpentine Chain)
 options.pixel_mapper_config = "U-mapper;3"
-options.gpio_slowdown = 4
+options.gpio_slowdown = 4  # RPi 5 必須降速以配合電位轉換器
+options.hardware_mapping = 'regular' # 對應 Adafruit HAT 接法
 </code></pre>
             </section>
 
-            <!-- 6. Checklist -->
+            <!-- 7. Checklist -->
             <section id="checklist" class="mb-16">
-                <h3 class="text-xl text-sky-400 mb-6 flex items-center gap-2"><span class="text-2xl">06.</span> 工程師檢核</h3>
+                <h3 class="text-xl text-sky-400 mb-6 flex items-center gap-2"><span class="text-2xl opacity-50">07.</span> 工程師檢核</h3>
                 <div class="bg-slate-900 border border-slate-800 rounded-lg p-6">
-                    <p class="text-sm text-slate-400">⚠️ 確認 RPi GND 與 PSU GND 共地。</p>
+                    <p class="text-sm text-slate-400">⚠️ 確認 RPi GND 與 PSU GND 共地，這是最常見的閃爍原因。</p>
                 </div>
             </section>
         </div>
     </main>
+
     <script>
-        function scrollToSection(id) { document.getElementById(id).scrollIntoView({ behavior: 'smooth' }); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); event.target.classList.add('active'); }
+        function scrollToSection(id) {
+            const el = document.getElementById(id);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth' });
+                document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+                const activeNav = document.querySelector(`.nav-item[onclick*="${id}"]`);
+                if(activeNav) activeNav.classList.add('active');
+            }
+        }
     </script>
 </body>
 </html>
