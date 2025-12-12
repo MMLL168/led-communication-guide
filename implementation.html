@@ -257,17 +257,16 @@
                 <p class="text-sm text-slate-500 mt-2 text-center">* U 型走線 (S-Mapper)：P1->P2->P3 (右移), P3->P4 (下折), P4->P5->P6 (左移)。此邏輯需在 Python 程式中設定。</p>
             </section>
 
-            <!-- 3. DETAILED SCHEMATIC (Pin-to-Pin) - PRESERVED v6.5 -->
+            <!-- 3. DETAILED SCHEMATIC (Pin-to-Pin) - FIXED: Connected lines -->
             <section id="detailed-schematic" class="mb-16">
                 <div class="flex justify-between items-end mb-6">
                     <h3 class="text-xl text-sky-400 font-bold flex items-center gap-2"><span class="text-2xl opacity-50">03.</span> 詳細電路原理圖 (Pin-to-Pin)</h3>
-                    <span class="text-xs text-slate-500 bg-slate-800 px-2 py-1 rounded">晶片腳位細節</span>
+                    <span class="text-xs text-slate-500 bg-slate-800 px-2 py-1 rounded">晶片腳位細節 - 修復浮接問題</span>
                 </div>
                 
                 <div class="schematic-bg rounded-lg p-6 overflow-x-auto shadow-xl border border-slate-700">
                     <svg width="1200" height="1100" viewBox="0 0 1200 1100">
-                        <!-- ... (SVG Content identical to v6.5, omitted for brevity but guaranteed to be here) ... -->
-                         <!-- Grid -->
+                        <!-- Grid -->
                         <defs><pattern id="grid-d" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 20 0 L 0 0 0 20" fill="none" stroke="#334155" stroke-width="1"/></pattern><marker id="arrow" markerWidth="4" markerHeight="4" refX="2" refY="2" orient="auto"><polygon points="0,0 4,2 0,4" fill="#94a3b8" /></marker></defs>
                         <rect width="100%" height="100%" fill="url(#grid-d)" />
 
@@ -276,28 +275,85 @@
                         <text x="600" y="30" text-anchor="middle" class="label-main">BUFFER / SHIFTER (3.3V -> 5V)</text>
                         <text x="1100" y="30" text-anchor="middle" class="label-main">OUTPUT (5V TTL)</text>
 
-                        <!-- === LEFT COLUMN: RPi GPIO === -->
+                        <!-- === LEFT COLUMN: RPi GPIO (Fixed Coordinates) === -->
                         <g transform="translate(50, 50)">
                             <rect width="100" height="1000" class="rpi-header"/>
                             <text x="50" y="20" text-anchor="middle" fill="#cbd5e1" font-weight="bold">RPi Header</text>
+                            
+                            <!-- 5V Power -->
                             <text x="110" y="60" text-anchor="end" class="pin-num" fill="#ef4444">Pin 2/4 (5V)</text>
                             <line x1="120" y1="55" x2="200" y2="55" class="wire-pwr"/>
+                            
+                            <!-- GND -->
                             <text x="110" y="950" text-anchor="end" class="pin-num" fill="#3b82f6">Pin 6/9.. (GND)</text>
                             <line x1="120" y1="945" x2="200" y2="945" class="wire-gnd"/>
-                            <text x="110" y="100" text-anchor="end" class="pin-num">P29 (GP5)</text> <line x1="120" y="97" x2="250" y2="97" class="wire-3v3"/>
-                            <text x="110" y="130" text-anchor="end" class="pin-num">P33 (GP13)</text><line x1="120" y="127" x2="250" y2="127" class="wire-3v3"/>
-                            <text x="110" y="160" text-anchor="end" class="pin-num">P31 (GP6)</text> <line x1="120" y="157" x2="250" y2="157" class="wire-3v3"/>
-                            <text x="110" y="190" text-anchor="end" class="pin-num">P32 (GP12)</text><line x1="120" y="187" x2="250" y2="187" class="wire-3v3"/>
-                            <text x="110" y="220" text-anchor="end" class="pin-num">P36 (GP16)</text><line x1="120" y="217" x2="250" y2="217" class="wire-3v3"/>
-                            <text x="110" y="250" text-anchor="end" class="pin-num">P16 (GP23)</text><line x1="120" y="247" x2="250" y2="247" class="wire-3v3"/>
-                            <text x="110" y="400" text-anchor="end" class="pin-num">P15 (GP22)</text><line x1="120" y="397" x2="250" y2="447" class="wire-3v3"/>
-                            <text x="110" y="430" text-anchor="end" class="pin-num">P37 (GP26)</text><line x1="120" y="427" x2="250" y2="467" class="wire-3v3"/>
-                            <text x="110" y="460" text-anchor="end" class="pin-num">P13 (GP27)</text><line x1="120" y="457" x2="250" y2="487" class="wire-3v3"/>
-                            <text x="110" y="490" text-anchor="end" class="pin-num">P38 (GP20)</text><line x1="120" y="487" x2="250" y2="507" class="wire-3v3"/>
-                            <text x="110" y="520" text-anchor="end" class="pin-num">P40 (GP21)</text><line x1="120" y="517" x2="250" y2="527" class="wire-3v3"/>
-                            <text x="110" y="700" text-anchor="end" class="pin-num">P11 (GP17)</text><line x1="120" y="697" x2="250" y2="797" class="wire-3v3"/>
-                            <text x="110" y="730" text-anchor="end" class="pin-num">P07 (GP4)</text>  <line x1="120" y="727" x2="250" y2="817" class="wire-3v3"/>
-                            <text x="110" y="760" text-anchor="end" class="pin-num">P12 (GP18)</text> <line x1="120" y="757" x2="250" y2="837" class="wire-3v3"/>
+                            
+                            <!-- U1 (RGB) Data Lines - Targeting Global Y of U1 Inputs (70 + y_local) -->
+                            <!-- U1 Pins: 2(77), 3(107), 4(137), 5(167), 6(187), 7(207) -->
+                            <!-- Targets relative to RPi Group Y(50): U1(70) + y_local - 50 = 20 + y_local -->
+                            <!-- Target 1: 20 + 77 = 97. (Horizontal) -->
+                            <text x="110" y="100" text-anchor="end" class="pin-num">P29 (GP5)</text> 
+                            <line x1="115" y1="97" x2="250" y2="97" class="wire-3v3"/>
+                            
+                            <!-- Target 2: 20 + 107 = 127. (Horizontal) -->
+                            <text x="110" y="130" text-anchor="end" class="pin-num">P33 (GP13)</text>
+                            <line x1="115" y1="127" x2="250" y2="127" class="wire-3v3"/>
+                            
+                            <!-- Target 3: 20 + 137 = 157. (Horizontal) -->
+                            <text x="110" y="160" text-anchor="end" class="pin-num">P31 (GP6)</text> 
+                            <line x1="115" y1="157" x2="250" y2="157" class="wire-3v3"/>
+                            
+                            <!-- Target 4: 20 + 167 = 187. (Horizontal) -->
+                            <text x="110" y="190" text-anchor="end" class="pin-num">P32 (GP12)</text>
+                            <line x1="115" y1="187" x2="250" y2="187" class="wire-3v3"/>
+                            
+                            <!-- Target 5: 20 + 187 = 207. (Slanted: Text 220, Line 217 -> 207) -->
+                            <text x="110" y="220" text-anchor="end" class="pin-num">P36 (GP16)</text>
+                            <line x1="115" y1="217" x2="250" y2="207" class="wire-3v3"/>
+                            
+                            <!-- Target 6: 20 + 207 = 227. (Slanted: Text 250, Line 247 -> 227) -->
+                            <text x="110" y="250" text-anchor="end" class="pin-num">P16 (GP23)</text>
+                            <line x1="115" y1="247" x2="250" y2="227" class="wire-3v3"/>
+
+                            <!-- U2 (Address) Data Lines - Targeting Global Y of U2 Inputs -->
+                            <!-- U2 Y(370). RPi Y(50). Delta = 320. -->
+                            <!-- Target = 320 + y_local_u2 -->
+                            
+                            <!-- Target A (Pin 2): 320 + 77 = 397. (Horizontal: Text 400->397) -->
+                            <text x="110" y="400" text-anchor="end" class="pin-num">P15 (GP22)</text>
+                            <line x1="115" y1="397" x2="250" y2="397" class="wire-3v3"/>
+                            
+                            <!-- Target B (Pin 3): 320 + 107 = 427. (Horizontal: Text 430->427) -->
+                            <text x="110" y="430" text-anchor="end" class="pin-num">P37 (GP26)</text>
+                            <line x1="115" y1="427" x2="250" y2="427" class="wire-3v3"/>
+                            
+                            <!-- Target C (Pin 4): 320 + 137 = 457. (Horizontal: Text 460->457) -->
+                            <text x="110" y="460" text-anchor="end" class="pin-num">P13 (GP27)</text>
+                            <line x1="115" y1="457" x2="250" y2="457" class="wire-3v3"/>
+                            
+                            <!-- Target D (Pin 5): 320 + 167 = 487. (Horizontal: Text 490->487) -->
+                            <text x="110" y="490" text-anchor="end" class="pin-num">P38 (GP20)</text>
+                            <line x1="115" y1="487" x2="250" y2="487" class="wire-3v3"/>
+                            
+                            <!-- Target E (Pin 6): 320 + 187 = 507. (Slanted: Text 520, Line 517->507) -->
+                            <text x="110" y="520" text-anchor="end" class="pin-num">P40 (GP21)</text>
+                            <line x1="115" y1="517" x2="250" y2="507" class="wire-3v3"/>
+
+                            <!-- U3 (Control) Data Lines - Targeting Global Y of U3 Inputs -->
+                            <!-- U3 Y(670). RPi Y(50). Delta = 620. -->
+                            <!-- Target = 620 + y_local_u3 -->
+                            
+                            <!-- Target CLK (Pin 2): 620 + 77 = 697. (Horizontal: Text 700->697) -->
+                            <text x="110" y="700" text-anchor="end" class="pin-num">P11 (GP17)</text>
+                            <line x1="115" y1="697" x2="250" y2="697" class="wire-3v3"/>
+                            
+                            <!-- Target LAT (Pin 3): 620 + 107 = 727. (Horizontal: Text 730->727) -->
+                            <text x="110" y="730" text-anchor="end" class="pin-num">P07 (GP4)</text>  
+                            <line x1="115" y1="727" x2="250" y2="727" class="wire-3v3"/>
+                            
+                            <!-- Target OE (Pin 4): 620 + 137 = 757. (Horizontal: Text 760->757) -->
+                            <text x="110" y="760" text-anchor="end" class="pin-num">P12 (GP18)</text> 
+                            <line x1="115" y1="757" x2="250" y2="757" class="wire-3v3"/>
                         </g>
 
                         <!-- U1 -->
