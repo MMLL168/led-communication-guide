@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LED 通訊指南 - 顏色狀態指示器</title>
+    <title>LED 燈號通訊指南</title>
     <style>
         * {
             margin: 0;
@@ -13,8 +13,8 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            color: #e4e4e4;
+            background: linear-gradient(135deg, #1e1e1e 0%, #2d2d2d 100%);
+            color: #e0e0e0;
             line-height: 1.6;
             min-height: 100vh;
         }
@@ -26,191 +26,167 @@
         }
 
         header {
-            text-align: center;
-            padding: 40px 20px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 15px;
-            margin-bottom: 30px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            padding: 30px 0;
+            margin-bottom: 40px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
         }
 
         h1 {
+            text-align: center;
+            color: #3498db;
             font-size: 2.5em;
-            color: #00d4ff;
-            margin-bottom: 10px;
-            text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
-        }
-
-        .subtitle {
-            font-size: 1.2em;
-            color: #b8b8b8;
-            margin-top: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
         }
 
         nav {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 15px;
-            border-radius: 10px;
+            background: #2c3e50;
+            padding: 15px 0;
             margin-bottom: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        nav ul {
+            list-style: none;
             display: flex;
             justify-content: center;
             flex-wrap: wrap;
-            gap: 10px;
         }
 
-        nav a {
-            color: #00d4ff;
+        nav ul li {
+            margin: 5px 15px;
+        }
+
+        nav ul li a {
+            color: #3498db;
             text-decoration: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            transition: all 0.3s ease;
-            background: rgba(0, 212, 255, 0.1);
+            font-weight: bold;
+            transition: color 0.3s;
+            padding: 5px 10px;
+            border-radius: 4px;
         }
 
-        nav a:hover {
-            background: rgba(0, 212, 255, 0.2);
-            transform: translateY(-2px);
+        nav ul li a:hover {
+            color: #2ecc71;
+            background: rgba(52, 152, 219, 0.1);
         }
 
         .section {
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(44, 62, 80, 0.6);
             padding: 30px;
-            border-radius: 15px;
             margin-bottom: 30px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            border-left: 5px solid #3498db;
         }
 
         h2 {
-            color: #00d4ff;
-            font-size: 2em;
+            color: #3498db;
             margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid rgba(0, 212, 255, 0.3);
-        }
-
-        h3 {
-            color: #4ecdc4;
-            font-size: 1.5em;
-            margin-top: 25px;
-            margin-bottom: 15px;
+            font-size: 1.8em;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
         }
 
         .led-table {
             width: 100%;
             border-collapse: collapse;
-            margin: 20px 0;
+            margin-top: 20px;
+            background: rgba(30, 30, 30, 0.8);
+            border-radius: 8px;
             overflow: hidden;
-            border-radius: 10px;
         }
 
         .led-table th {
-            background: rgba(0, 212, 255, 0.2);
-            color: #00d4ff;
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: #3498db;
             padding: 15px;
             text-align: left;
-            font-weight: 600;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         .led-table td {
-            padding: 15px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .led-table tr {
-            transition: background 0.3s ease;
+            padding: 12px 15px;
+            border-bottom: 1px solid #34495e;
         }
 
         .led-table tr:hover {
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(52, 152, 219, 0.1);
         }
 
-        .led-indicator {
+        .led-status {
             display: inline-block;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            margin-right: 10px;
-            box-shadow: 0 0 10px currentColor;
-            animation: pulse 2s infinite;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.9em;
+        }
+
+        .status-on {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+            box-shadow: 0 2px 4px rgba(46, 204, 113, 0.4);
+        }
+
+        .status-off {
+            background: linear-gradient(135deg, #7f8c8d 0%, #95a5a6 100%);
+            color: white;
+            box-shadow: 0 2px 4px rgba(149, 165, 166, 0.4);
+        }
+
+        .status-blink {
+            background: linear-gradient(135deg, #f39c12 0%, #f1c40f 100%);
+            color: white;
+            box-shadow: 0 2px 4px rgba(241, 196, 15, 0.4);
+            animation: pulse 1.5s infinite;
         }
 
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.6;
+            }
         }
 
-        .red { background-color: #ff4444; }
-        .green { background-color: #00ff00; }
-        .blue { background-color: #4444ff; }
-        .yellow { background-color: #ffff00; }
-        .cyan { background-color: #00ffff; }
-        .magenta { background-color: #ff00ff; }
-        .white { background-color: #ffffff; }
-        .orange { background-color: #ff8800; }
-        .purple { background-color: #8800ff; }
-        .off { background-color: #333333; }
-
-        .pattern-demo {
-            display: flex;
-            gap: 10px;
+        .info-box {
+            background: rgba(41, 128, 185, 0.2);
+            border-left: 4px solid #3498db;
+            padding: 15px;
             margin: 15px 0;
-            flex-wrap: wrap;
+            border-radius: 4px;
         }
 
-        .pattern-item {
-            padding: 10px 20px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 5px;
-            border-left: 4px solid #00d4ff;
-        }
-
-        .important-note {
-            background: rgba(255, 68, 68, 0.1);
-            border-left: 4px solid #ff4444;
+        .warning-box {
+            background: rgba(230, 126, 34, 0.2);
+            border-left: 4px solid #e67e22;
             padding: 15px;
-            margin: 20px 0;
-            border-radius: 5px;
-        }
-
-        .success-note {
-            background: rgba(0, 255, 0, 0.1);
-            border-left: 4px solid #00ff00;
-            padding: 15px;
-            margin: 20px 0;
-            border-radius: 5px;
-        }
-
-        .info-note {
-            background: rgba(0, 212, 255, 0.1);
-            border-left: 4px solid #00d4ff;
-            padding: 15px;
-            margin: 20px 0;
-            border-radius: 5px;
-        }
-
-        ul, ol {
             margin: 15px 0;
-            padding-left: 30px;
+            border-radius: 4px;
         }
 
-        li {
-            margin: 10px 0;
-        }
-
-        code {
-            background: rgba(0, 0, 0, 0.3);
-            padding: 2px 8px;
-            border-radius: 3px;
-            color: #00d4ff;
+        .code-block {
+            background: #1e1e1e;
+            border: 1px solid #34495e;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
             font-family: 'Courier New', monospace;
+            overflow-x: auto;
+            color: #2ecc71;
         }
 
         footer {
             text-align: center;
-            padding: 30px;
-            color: #888;
-            margin-top: 50px;
+            padding: 20px;
+            margin-top: 40px;
+            background: rgba(44, 62, 80, 0.6);
+            border-radius: 8px;
+            color: #95a5a6;
         }
 
         @media (max-width: 768px) {
@@ -218,341 +194,251 @@
                 font-size: 1.8em;
             }
 
-            .section {
-                padding: 20px;
+            nav ul {
+                flex-direction: column;
+                align-items: center;
             }
 
             .led-table {
                 font-size: 0.9em;
             }
 
-            .led-table th,
-            .led-table td {
-                padding: 10px;
+            .section {
+                padding: 20px;
             }
-        }
-
-        .quick-ref {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 15px;
-            margin: 20px 0;
-        }
-
-        .quick-ref-item {
-            background: rgba(0, 0, 0, 0.3);
-            padding: 15px;
-            border-radius: 8px;
-            border-top: 3px solid #00d4ff;
-        }
-
-        .quick-ref-item h4 {
-            color: #4ecdc4;
-            margin-bottom: 10px;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>🚦 LED 通訊指南</h1>
-            <p class="subtitle">設備狀態的全面視覺指示器參考</p>
-        </header>
+    <header>
+        <div class="container">
+            <h1>🔌 LED 燈號通訊指南</h1>
+        </div>
+    </header>
 
+    <div class="container">
         <nav>
-            <a href="#overview">概述</a>
-            <a href="#colors">顏色含義</a>
-            <a href="#patterns">閃爍模式</a>
-            <a href="#troubleshooting">故障排除</a>
-            <a href="#quick-ref">快速參考</a>
+            <ul>
+                <li><a href="#overview">概述</a></li>
+                <li><a href="#power">電源 LED</a></li>
+                <li><a href="#status">狀態 LED</a></li>
+                <li><a href="#network">網路 LED</a></li>
+                <li><a href="#troubleshooting">故障排除</a></li>
+            </ul>
         </nav>
 
         <section id="overview" class="section">
             <h2>📋 概述</h2>
-            <p>LED 指示器為設備和系統狀態提供即時視覺回饋。本指南幫助您了解不同的 LED 顏色、模式及其含義。</p>
+            <p>LED 燈號是設備與使用者溝通的主要方式。了解不同的 LED 模式可以幫助您快速診斷問題並確保系統正常運作。</p>
             
-            <div class="info-note">
-                <strong>💡 為什麼 LED 指示器很重要？</strong>
-                <ul>
-                    <li>即時狀態監控</li>
-                    <li>即時問題偵測</li>
-                    <li>減少診斷時間</li>
-                    <li>提高系統可靠性</li>
-                </ul>
+            <div class="info-box">
+                <strong>💡 提示：</strong> LED 燈號通常位於設備前面板，在昏暗環境下最容易觀察。
             </div>
         </section>
 
-        <section id="colors" class="section">
-            <h2>🎨 LED 顏色含義</h2>
+        <section id="power" class="section">
+            <h2>⚡ 電源 LED 指示燈</h2>
+            <p>電源 LED 顯示設備的電源狀態和整體健康狀況。</p>
             
-            <h3>基本狀態指示器</h3>
             <table class="led-table">
                 <thead>
                     <tr>
-                        <th>LED 顏色</th>
                         <th>狀態</th>
-                        <th>說明</th>
-                        <th>動作</th>
+                        <th>意義</th>
+                        <th>操作說明</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td><span class="led-indicator green"></span>綠色</td>
-                        <td>正常/運作中</td>
-                        <td>系統運作正常，所有功能正常運行</td>
-                        <td>無需動作</td>
+                        <td><span class="led-status status-on">穩定綠燈</span></td>
+                        <td>電源正常</td>
+                        <td>設備運作正常</td>
                     </tr>
                     <tr>
-                        <td><span class="led-indicator blue"></span>藍色</td>
-                        <td>待機/閒置</td>
-                        <td>系統已開啟但目前未活動</td>
-                        <td>無需動作</td>
+                        <td><span class="led-status status-off">關閉</span></td>
+                        <td>無電源</td>
+                        <td>檢查電源連接和電源開關</td>
                     </tr>
                     <tr>
-                        <td><span class="led-indicator yellow"></span>黃色</td>
-                        <td>警告/注意</td>
-                        <td>系統運作中但檢測到次要問題</td>
-                        <td>監控系統</td>
+                        <td><span class="led-status status-blink">閃爍綠燈</span></td>
+                        <td>開機中</td>
+                        <td>等待啟動程序完成（30-60秒）</td>
                     </tr>
                     <tr>
-                        <td><span class="led-indicator orange"></span>橙色</td>
-                        <td>警告</td>
-                        <td>需要關注但不嚴重</td>
-                        <td>檢查系統日誌</td>
+                        <td><span class="led-status status-on">穩定紅燈</span></td>
+                        <td>電源故障</td>
+                        <td>檢查電源供應器和內部連接</td>
                     </tr>
                     <tr>
-                        <td><span class="led-indicator red"></span>紅色</td>
-                        <td>錯誤/嚴重</td>
-                        <td>檢測到嚴重問題，需要立即關注</td>
-                        <td>立即檢查</td>
-                    </tr>
-                    <tr>
-                        <td><span class="led-indicator white"></span>白色</td>
-                        <td>初始化中</td>
-                        <td>系統正在啟動或初始化</td>
-                        <td>等待完成</td>
-                    </tr>
-                    <tr>
-                        <td><span class="led-indicator cyan"></span>青色</td>
-                        <td>資料傳輸中</td>
-                        <td>正在進行網路/資料通訊</td>
-                        <td>無需動作</td>
-                    </tr>
-                    <tr>
-                        <td><span class="led-indicator magenta"></span>洋紅色</td>
-                        <td>更新/維護</td>
-                        <td>系統正在更新或維護模式</td>
-                        <td>請勿中斷</td>
-                    </tr>
-                    <tr>
-                        <td><span class="led-indicator purple"></span>紫色</td>
-                        <td>自訂/特殊</td>
-                        <td>特殊模式或自訂配置</td>
-                        <td>請參閱文件</td>
-                    </tr>
-                    <tr>
-                        <td><span class="led-indicator off"></span>關閉</td>
-                        <td>已關閉</td>
-                        <td>系統已關閉或 LED 已停用</td>
-                        <td>檢查電源</td>
+                        <td><span class="led-status status-blink">閃爍紅燈</span></td>
+                        <td>過熱警告</td>
+                        <td>確保通風良好，清潔風扇和散熱孔</td>
                     </tr>
                 </tbody>
             </table>
-
-            <h3>組合指示器</h3>
-            <div class="info-note">
-                <p><strong>多個 LED 同時亮起時：</strong></p>
-                <ul>
-                    <li><span class="led-indicator green"></span><span class="led-indicator blue"></span> 綠色 + 藍色 = 連線且待機</li>
-                    <li><span class="led-indicator red"></span><span class="led-indicator yellow"></span> 紅色 + 黃色 = 嚴重錯誤伴隨警告</li>
-                    <li><span class="led-indicator green"></span><span class="led-indicator cyan"></span> 綠色 + 青色 = 運作中且傳輸資料</li>
-                </ul>
-            </div>
         </section>
 
-        <section id="patterns" class="section">
-            <h2>⚡ 閃爍模式</h2>
+        <section id="status" class="section">
+            <h2>📊 狀態 LED 指示燈</h2>
+            <p>狀態 LED 提供設備運作狀態和活動的資訊。</p>
             
-            <h3>常見閃爍模式</h3>
             <table class="led-table">
                 <thead>
                     <tr>
-                        <th>模式</th>
-                        <th>說明</th>
-                        <th>含義</th>
+                        <th>狀態</th>
+                        <th>意義</th>
+                        <th>操作說明</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td><strong>恆亮</strong></td>
-                        <td>持續亮起，不閃爍</td>
-                        <td>穩定狀態</td>
+                        <td><span class="led-status status-on">穩定藍燈</span></td>
+                        <td>系統就緒</td>
+                        <td>設備已完全啟動並可使用</td>
                     </tr>
                     <tr>
-                        <td><strong>慢速閃爍</strong></td>
-                        <td>每秒 1-2 次（亮 0.5 秒，暗 0.5 秒）</td>
-                        <td>正常處理中/心跳</td>
+                        <td><span class="led-status status-blink">閃爍藍燈</span></td>
+                        <td>處理中</td>
+                        <td>設備正在處理資料或命令</td>
                     </tr>
                     <tr>
-                        <td><strong>快速閃爍</strong></td>
-                        <td>每秒 5-10 次</td>
-                        <td>活動中/繁忙</td>
+                        <td><span class="led-status status-blink">快速閃爍藍燈</span></td>
+                        <td>韌體更新</td>
+                        <td>請勿關閉電源或斷線</td>
                     </tr>
                     <tr>
-                        <td><strong>脈動</strong></td>
-                        <td>平滑的淡入淡出</td>
-                        <td>待機/睡眠模式</td>
+                        <td><span class="led-status status-on">穩定黃燈</span></td>
+                        <td>警告狀態</td>
+                        <td>檢查系統日誌以了解具體問題</td>
                     </tr>
                     <tr>
-                        <td><strong>雙閃</strong></td>
-                        <td>兩次快速閃爍，然後暫停</td>
-                        <td>配對模式/尋找連線</td>
-                    </tr>
-                    <tr>
-                        <td><strong>三閃</strong></td>
-                        <td>三次快速閃爍，然後暫停</td>
-                        <td>錯誤代碼/警告序列</td>
-                    </tr>
-                    <tr>
-                        <td><strong>交替閃爍</strong></td>
-                        <td>兩種顏色交替</td>
-                        <td>轉換狀態</td>
-                    </tr>
-                    <tr>
-                        <td><strong>隨機閃爍</strong></td>
-                        <td>不規則閃爍</td>
-                        <td>可能的故障/檢查系統</td>
+                        <td><span class="led-status status-blink">閃爍紅燈</span></td>
+                        <td>錯誤狀態</td>
+                        <td>立即查看錯誤日誌或聯繫技術支援</td>
                     </tr>
                 </tbody>
             </table>
 
-            <h3>序列模式範例</h3>
-            <div class="pattern-demo">
-                <div class="pattern-item">
-                    <strong>啟動序列：</strong><br>
-                    白色（2 秒）→ 藍色脈動（3 秒）→ 綠色恆亮
-                </div>
-                <div class="pattern-item">
-                    <strong>錯誤序列：</strong><br>
-                    紅色快速閃爍（3 次）→ 黃色恆亮
-                </div>
-                <div class="pattern-item">
-                    <strong>更新序列：</strong><br>
-                    洋紅色脈動（持續）→ 綠色（完成時）
-                </div>
-                <div class="pattern-item">
-                    <strong>連線序列：</strong><br>
-                    青色雙閃（尋找）→ 綠色恆亮（已連線）
-                </div>
+            <div class="warning-box">
+                <strong>⚠️ 警告：</strong> 若狀態 LED 持續顯示紅燈超過 5 分鐘，請記錄錯誤模式並聯繫技術支援。
+            </div>
+        </section>
+
+        <section id="network" class="section">
+            <h2>🌐 網路 LED 指示燈</h2>
+            <p>網路 LED 顯示連線狀態和網路活動。</p>
+            
+            <table class="led-table">
+                <thead>
+                    <tr>
+                        <th>狀態</th>
+                        <th>意義</th>
+                        <th>操作說明</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="led-status status-on">穩定綠燈</span></td>
+                        <td>已連線</td>
+                        <td>網路連線已建立</td>
+                    </tr>
+                    <tr>
+                        <td><span class="led-status status-blink">閃爍綠燈</span></td>
+                        <td>資料傳輸</td>
+                        <td>主動傳送/接收資料</td>
+                    </tr>
+                    <tr>
+                        <td><span class="led-status status-off">關閉</span></td>
+                        <td>未連線</td>
+                        <td>檢查網路線和路由器連接</td>
+                    </tr>
+                    <tr>
+                        <td><span class="led-status status-on">穩定黃燈</span></td>
+                        <td>低速連線</td>
+                        <td>連線速度降低 - 檢查線材品質</td>
+                    </tr>
+                    <tr>
+                        <td><span class="led-status status-blink">閃爍紅燈</span></td>
+                        <td>連線錯誤</td>
+                        <td>驗證網路設定和 IP 位址配置</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="info-box">
+                <strong>💡 網路速度指示器：</strong>
+                <ul style="margin-top: 10px; margin-left: 20px;">
+                    <li>綠燈 = 1 Gbps 或更高</li>
+                    <li>黃燈 = 100 Mbps</li>
+                    <li>紅燈 = 10 Mbps 或連線問題</li>
+                </ul>
             </div>
         </section>
 
         <section id="troubleshooting" class="section">
-            <h2>🔧 故障排除指南</h2>
+            <h2>🔧 故障排除</h2>
             
-            <h3>常見問題與解決方案</h3>
+            <h3 style="color: #2ecc71; margin-top: 20px;">常見 LED 問題及解決方案</h3>
             
-            <div class="important-note">
-                <h4><span class="led-indicator red"></span>紅色恆亮</h4>
-                <p><strong>問題：</strong>嚴重系統錯誤</p>
-                <p><strong>解決方案：</strong></p>
-                <ol>
-                    <li>檢查所有連線</li>
-                    <li>確認電源供應</li>
-                    <li>查看系統日誌以獲取錯誤代碼</li>
-                    <li>如果持續出現，重新啟動設備</li>
-                    <li>聯絡技術支援（如果問題仍然存在）</li>
+            <div class="info-box">
+                <strong>問題：所有 LED 不亮</strong>
+                <ol style="margin-top: 10px; margin-left: 20px;">
+                    <li>確認電源線已牢固連接</li>
+                    <li>檢查電源插座是否正常</li>
+                    <li>使用不同的電源線測試</li>
+                    <li>驗證電源開關是否處於 ON（開）的位置</li>
                 </ol>
             </div>
 
-            <div class="pattern-item" style="margin: 20px 0;">
-                <h4><span class="led-indicator yellow"></span>黃色閃爍</h4>
-                <p><strong>問題：</strong>警告狀態</p>
-                <p><strong>解決方案：</strong></p>
-                <ol>
-                    <li>記錄閃爍模式（次數和頻率）</li>
-                    <li>檢查系統資源（CPU、記憶體、磁碟空間）</li>
-                    <li>確認沒有待處理的更新</li>
-                    <li>監控是否有錯誤升級</li>
+            <div class="info-box">
+                <strong>問題：LED 持續閃爍紅燈</strong>
+                <ol style="margin-top: 10px; margin-left: 20px;">
+                    <li>記錄閃爍模式（快/慢，重複次數）</li>
+                    <li>執行系統診斷</li>
+                    <li>檢查系統日誌檔案</li>
+                    <li>若問題持續，聯繫技術支援並提供 LED 模式</li>
                 </ol>
             </div>
 
-            <div class="pattern-item" style="margin: 20px 0;">
-                <h4><span class="led-indicator off"></span>無 LED 燈</h4>
-                <p><strong>問題：</strong>無電源或 LED 故障</p>
-                <p><strong>解決方案：</strong></p>
-                <ol>
-                    <li>檢查電源連線</li>
-                    <li>確認設備已開啟</li>
-                    <li>測試電源插座</li>
-                    <li>檢查電源線</li>
-                    <li>嘗試備用電源（如適用）</li>
+            <div class="info-box">
+                <strong>問題：網路 LED 不穩定</strong>
+                <ol style="margin-top: 10px; margin-left: 20px;">
+                    <li>確認網路線正確插入</li>
+                    <li>測試使用不同的網路連接埠</li>
+                    <li>驗證網路設定正確</li>
+                    <li>檢查是否有線材損壞或彎折</li>
                 </ol>
             </div>
 
-            <div class="success-note">
-                <h4><span class="led-indicator cyan"></span>青色持續閃爍</h4>
-                <p><strong>狀態：</strong>大量資料傳輸</p>
-                <p><strong>說明：</strong>這通常是正常的。設備正在主動傳輸或接收資料。如果持續超過預期時間，請檢查網路連線。</p>
-            </div>
-        </section>
-
-        <section id="quick-ref" class="section">
-            <h2>⚡ 快速參考指南</h2>
-            
-            <div class="quick-ref">
-                <div class="quick-ref-item">
-                    <h4>✅ 正常運作</h4>
-                    <p>綠色恆亮或慢速閃爍<br>青色閃爍（資料傳輸時）<br>藍色（待機時）</p>
-                </div>
-                
-                <div class="quick-ref-item">
-                    <h4>⚠️ 需要關注</h4>
-                    <p>黃色或橙色<br>記錄模式<br>監控變化</p>
-                </div>
-                
-                <div class="quick-ref-item">
-                    <h4>🚨 立即行動</h4>
-                    <p>紅色（任何模式）<br>隨機閃爍<br>檢查系統日誌</p>
-                </div>
-                
-                <div class="quick-ref-item">
-                    <h4>🔄 處理中</h4>
-                    <p>白色（初始化中）<br>洋紅色（更新中）<br>請勿中斷</p>
-                </div>
-            </div>
-
-            <div class="info-note">
-                <h4>💡 專業提示</h4>
-                <ul>
-                    <li>始終記錄 LED 模式以供技術支援使用</li>
-                    <li>對異常模式進行錄影可以幫助診斷</li>
-                    <li>查閱設備手冊以了解特定型號的變化</li>
-                    <li>某些設備允許自訂 LED 行為</li>
-                    <li>環境光線會影響可見度 - 在昏暗環境中檢查</li>
+            <div class="warning-box">
+                <strong>📞 需要協助？</strong><br>
+                若您在閱讀 LED 指示或解決問題時遇到困難，請聯繫技術支援團隊，並提供：
+                <ul style="margin-top: 10px; margin-left: 20px;">
+                    <li>目前的 LED 狀態（顏色和模式）</li>
+                    <li>問題發生的時間點</li>
+                    <li>最近的系統變更</li>
+                    <li>任何錯誤訊息</li>
                 </ul>
             </div>
         </section>
 
         <section class="section">
-            <h2>📚 附加資源</h2>
-            <ul>
-                <li><strong>設備手冊：</strong>請查閱您特定設備的文件以了解詳細的 LED 說明</li>
-                <li><strong>系統日誌：</strong>檢查系統日誌以了解對應的錯誤代碼和 LED 狀態</li>
-                <li><strong>技術支援：</strong>記錄 LED 模式並在聯絡支援時提供</li>
-                <li><strong>韌體更新：</strong>保持設備韌體最新以確保正確的 LED 功能</li>
-            </ul>
-
-            <div class="important-note">
-                <strong>⚠️ 重要安全提示：</strong>
-                <p>如果您看到紅色快速閃爍或聞到異常氣味，請立即斷開設備電源並聯絡技術支援。請勿嘗試在嚴重錯誤指示器出現時使用設備。</p>
+            <h2>📖 快速參考</h2>
+            <div class="code-block">
+                <strong>LED 狀態摘要：</strong><br><br>
+                🟢 綠燈   = 正常運作<br>
+                🟡 黃燈   = 警告/注意<br>
+                🔴 紅燈   = 錯誤/故障<br>
+                🔵 藍燈   = 系統活動<br>
+                ⚫ 關閉   = 無電源/未連線<br>
+                💫 閃爍   = 處理中/資料傳輸
             </div>
         </section>
-
-        <footer>
-            <p>© 2026 LED 通訊指南 | 最後更新：2026-01-06</p>
-            <p>本指南供一般資訊使用。具體的 LED 行為可能因製造商和型號而異。</p>
-        </footer>
     </div>
+
+    <footer>
+        <p>&copy; 2026 LED 通訊指南。保留所有權利。</p>
+        <p>最後更新：2026 年 1 月 6 日</p>
+    </footer>
 </body>
 </html>
