@@ -3,442 +3,746 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LED 燈號通訊指南</title>
+    <title>LED 顯示屏串接通訊原理 | 完整技術指南 v5.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1e1e1e 0%, #2d2d2d 100%);
-            color: #e0e0e0;
-            line-height: 1.6;
-            min-height: 100vh;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        header {
-            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-            padding: 30px 0;
-            margin-bottom: 40px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-        }
-
-        h1 {
-            text-align: center;
-            color: #3498db;
-            font-size: 2.5em;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-        }
-
-        nav {
-            background: #2c3e50;
-            padding: 15px 0;
-            margin-bottom: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-        }
-
-        nav ul {
-            list-style: none;
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        nav ul li {
-            margin: 5px 15px;
-        }
-
-        nav ul li a {
-            color: #3498db;
-            text-decoration: none;
-            font-weight: bold;
-            transition: color 0.3s;
-            padding: 5px 10px;
-            border-radius: 4px;
-        }
-
-        nav ul li a:hover {
-            color: #2ecc71;
-            background: rgba(52, 152, 219, 0.1);
-        }
-
-        .section {
-            background: rgba(44, 62, 80, 0.6);
-            padding: 30px;
-            margin-bottom: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-            border-left: 5px solid #3498db;
-        }
-
-        h2 {
-            color: #3498db;
-            margin-bottom: 20px;
-            font-size: 1.8em;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
-        }
-
-        .led-table {
+        body { font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif; }
+        
+        .chart-container {
+            position: relative;
             width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-            background: rgba(30, 30, 30, 0.8);
-            border-radius: 8px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container { height: 400px; }
+        }
+
+        .canvas-sim-container {
+            width: 100%;
+            height: 300px;
+            background-color: #f8fafc;
+            border-radius: 0.5rem;
+            border: 1px solid #e2e8f0;
+            position: relative;
             overflow: hidden;
         }
 
-        .led-table th {
-            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-            color: #3498db;
-            padding: 15px;
+        .connector-card {
+            transition: all 0.2s ease;
+        }
+        .connector-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .connector-card.active {
+            border-color: #4f46e5;
+            background-color: #eff6ff;
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+        }
+
+        .modal {
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease-in-out;
+            pointer-events: none;
+        }
+        .modal.active {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+        .modal-content {
+            transform: scale(0.95);
+            transition: transform 0.3s ease-in-out;
+        }
+        .modal.active .modal-content {
+            transform: scale(1);
+        }
+
+        .pin-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        .pin-table th {
             text-align: left;
-            font-weight: bold;
+            padding: 8px;
+            background-color: #f1f5f9;
+            color: #475569;
+            border-bottom: 2px solid #e2e8f0;
+            font-size: 0.75rem;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0.05em;
         }
-
-        .led-table td {
-            padding: 12px 15px;
-            border-bottom: 1px solid #34495e;
+        .pin-table td {
+            padding: 8px;
+            border-bottom: 1px solid #e2e8f0;
+            font-family: monospace;
         }
-
-        .led-table tr:hover {
-            background: rgba(52, 152, 219, 0.1);
+        .pin-table tr:last-child td {
+            border-bottom: none;
         }
-
-        .led-status {
+        .wire-dot {
             display: inline-block;
-            padding: 5px 15px;
-            border-radius: 20px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 6px;
+            border: 1px solid #cbd5e1;
+            vertical-align: middle;
+        }
+
+        .cab-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            aspect-ratio: 16/9;
+        }
+        .cab-cell {
+            background: #e2e8f0;
+            border: 2px solid #cbd5e1;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             font-weight: bold;
-            text-transform: uppercase;
-            font-size: 0.9em;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
         }
-
-        .status-on {
-            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+        .cab-cell:hover {
+            border-color: #6366f1;
+            color: #4f46e5;
+        }
+        .cab-cell.active {
+            background: #4f46e5;
             color: white;
-            box-shadow: 0 2px 4px rgba(46, 204, 113, 0.4);
+            border-color: #312e81;
         }
-
-        .status-off {
-            background: linear-gradient(135deg, #7f8c8d 0%, #95a5a6 100%);
-            color: white;
-            box-shadow: 0 2px 4px rgba(149, 165, 166, 0.4);
-        }
-
-        .status-blink {
-            background: linear-gradient(135deg, #f39c12 0%, #f1c40f 100%);
-            color: white;
-            box-shadow: 0 2px 4px rgba(241, 196, 15, 0.4);
-            animation: pulse 1.5s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% {
-                opacity: 1;
-            }
-            50% {
-                opacity: 0.6;
-            }
-        }
-
-        .info-box {
-            background: rgba(41, 128, 185, 0.2);
-            border-left: 4px solid #3498db;
-            padding: 15px;
-            margin: 15px 0;
-            border-radius: 4px;
-        }
-
-        .warning-box {
-            background: rgba(230, 126, 34, 0.2);
-            border-left: 4px solid #e67e22;
-            padding: 15px;
-            margin: 15px 0;
-            border-radius: 4px;
-        }
-
-        .code-block {
-            background: #1e1e1e;
-            border: 1px solid #34495e;
-            border-radius: 4px;
-            padding: 15px;
-            margin: 15px 0;
-            font-family: 'Courier New', monospace;
-            overflow-x: auto;
-            color: #2ecc71;
-        }
-
-        footer {
-            text-align: center;
-            padding: 20px;
-            margin-top: 40px;
-            background: rgba(44, 62, 80, 0.6);
-            border-radius: 8px;
-            color: #95a5a6;
-        }
-
-        @media (max-width: 768px) {
-            h1 {
-                font-size: 1.8em;
-            }
-
-            nav ul {
-                flex-direction: column;
-                align-items: center;
-            }
-
-            .led-table {
-                font-size: 0.9em;
-            }
-
-            .section {
-                padding: 20px;
-            }
+        .cab-coord {
+            position: absolute;
+            bottom: 4px;
+            right: 4px;
+            font-size: 0.6rem;
+            opacity: 0.7;
         }
     </style>
 </head>
-<body>
-    <header>
-        <div class="container">
-            <h1>🔌 LED 燈號通訊指南</h1>
+<body class="bg-slate-50 text-slate-800 leading-relaxed">
+
+    <!-- Navigation -->
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <span class="text-2xl mr-2">📟</span>
+                    <h1 class="text-xl font-bold text-slate-900 tracking-tight">LED 顯示屏完整技術指南 <span class="text-xs bg-red-600 text-white px-2 py-0.5 rounded ml-2">v5.0 Complete</span></h1>
+                </div>
+                <nav class="hidden md:flex space-x-6 items-center">
+                    <button onclick="scrollToSection('protocols')" class="text-slate-500 hover:text-indigo-600 px-2 py-2 text-sm font-medium">通訊協定</button>
+                    <button onclick="scrollToSection('hardware')" class="text-slate-500 hover:text-indigo-600 px-2 py-2 text-sm font-medium">硬體接頭</button>
+                    <button onclick="scrollToSection('receiving-card')" class="text-slate-500 hover:text-indigo-600 px-2 py-2 text-sm font-medium">接收卡</button>
+                    <button onclick="scrollToSection('hub75')" class="text-indigo-600 px-2 py-2 text-sm font-bold border-b-2 border-indigo-600">HUB75</button>
+                    <button onclick="scrollToSection('workflow')" class="text-slate-500 hover:text-indigo-600 px-2 py-2 text-sm font-medium">系統協作</button>
+                </nav>
+            </div>
         </div>
     </header>
 
-    <div class="container">
-        <nav>
-            <ul>
-                <li><a href="#overview">概述</a></li>
-                <li><a href="#power">電源 LED</a></li>
-                <li><a href="#status">狀態 LED</a></li>
-                <li><a href="#network">網路 LED</a></li>
-                <li><a href="#troubleshooting">故障排除</a></li>
-            </ul>
-        </nav>
-
-        <section id="overview" class="section">
-            <h2>📋 概述</h2>
-            <p>LED 燈號是設備與使用者溝通的主要方式。了解不同的 LED 模式可以幫助您快速診斷問題並確保系統正常運作。</p>
-            
-            <div class="info-box">
-                <strong>💡 提示：</strong> LED 燈號通常位於設備前面板，在昏暗環境下最容易觀察。
+    <!-- Hero Section -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="text-center">
+            <h2 class="text-3xl font-extrabold text-slate-900 sm:text-4xl">
+                LED 顯示屏完整技術指南
+            </h2>
+            <p class="mt-4 max-w-2xl mx-auto text-xl text-slate-500">
+                從接收卡、HUB75 介面到驅動 IC 的完整技術解析
+            </p>
+        </div>
+        
+        <div class="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-4">
+            <div class="bg-white overflow-hidden shadow rounded-lg p-6 border-t-4 border-indigo-500">
+                <div class="text-lg font-medium text-slate-900">接收卡</div>
+                <p class="mt-2 text-sm text-slate-500">FPGA + MCU 數位中樞</p>
             </div>
-        </section>
-
-        <section id="power" class="section">
-            <h2>⚡ 電源 LED 指示燈</h2>
-            <p>電源 LED 顯示設備的電源狀態和整體健康狀況。</p>
-            
-            <table class="led-table">
-                <thead>
-                    <tr>
-                        <th>狀態</th>
-                        <th>意義</th>
-                        <th>操作說明</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><span class="led-status status-on">穩定綠燈</span></td>
-                        <td>電源正常</td>
-                        <td>設備運作正常</td>
-                    </tr>
-                    <tr>
-                        <td><span class="led-status status-off">關閉</span></td>
-                        <td>無電源</td>
-                        <td>檢查電源連接和電源開關</td>
-                    </tr>
-                    <tr>
-                        <td><span class="led-status status-blink">閃爍綠燈</span></td>
-                        <td>開機中</td>
-                        <td>等待啟動程序完成（30-60秒）</td>
-                    </tr>
-                    <tr>
-                        <td><span class="led-status status-on">穩定紅燈</span></td>
-                        <td>電源故障</td>
-                        <td>檢查電源供應器和內部連接</td>
-                    </tr>
-                    <tr>
-                        <td><span class="led-status status-blink">閃爍紅燈</span></td>
-                        <td>過熱警告</td>
-                        <td>確保通風良好，清潔風扇和散熱孔</td>
-                    </tr>
-                </tbody>
-            </table>
-        </section>
-
-        <section id="status" class="section">
-            <h2>📊 狀態 LED 指示燈</h2>
-            <p>狀態 LED 提供設備運作狀態和活動的資訊。</p>
-            
-            <table class="led-table">
-                <thead>
-                    <tr>
-                        <th>狀態</th>
-                        <th>意義</th>
-                        <th>操作說明</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><span class="led-status status-on">穩定藍燈</span></td>
-                        <td>系統就緒</td>
-                        <td>設備已完全啟動並可使用</td>
-                    </tr>
-                    <tr>
-                        <td><span class="led-status status-blink">閃爍藍燈</span></td>
-                        <td>處理中</td>
-                        <td>設備正在處理資料或命令</td>
-                    </tr>
-                    <tr>
-                        <td><span class="led-status status-blink">快速閃爍藍燈</span></td>
-                        <td>韌體更新</td>
-                        <td>請勿關閉電源或斷線</td>
-                    </tr>
-                    <tr>
-                        <td><span class="led-status status-on">穩定黃燈</span></td>
-                        <td>警告狀態</td>
-                        <td>檢查系統日誌以了解具體問題</td>
-                    </tr>
-                    <tr>
-                        <td><span class="led-status status-blink">閃爍紅燈</span></td>
-                        <td>錯誤狀態</td>
-                        <td>立即查看錯誤日誌或聯繫技術支援</td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <div class="warning-box">
-                <strong>⚠️ 警告：</strong> 若狀態 LED 持續顯示紅燈超過 5 分鐘，請記錄錯誤模式並聯繫技術支援。
+            <div class="bg-white overflow-hidden shadow rounded-lg p-6 border-t-4 border-teal-500">
+                <div class="text-lg font-medium text-slate-900">HUB75</div>
+                <p class="mt-2 text-sm text-slate-500">標準硬體介面協定</p>
             </div>
-        </section>
-
-        <section id="network" class="section">
-            <h2>🌐 網路 LED 指示燈</h2>
-            <p>網路 LED 顯示連線狀態和網路活動。</p>
-            
-            <table class="led-table">
-                <thead>
-                    <tr>
-                        <th>狀態</th>
-                        <th>意義</th>
-                        <th>操作說明</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><span class="led-status status-on">穩定綠燈</span></td>
-                        <td>已連線</td>
-                        <td>網路連線已建立</td>
-                    </tr>
-                    <tr>
-                        <td><span class="led-status status-blink">閃爍綠燈</span></td>
-                        <td>資料傳輸</td>
-                        <td>主動傳送/接收資料</td>
-                    </tr>
-                    <tr>
-                        <td><span class="led-status status-off">關閉</span></td>
-                        <td>未連線</td>
-                        <td>檢查網路線和路由器連接</td>
-                    </tr>
-                    <tr>
-                        <td><span class="led-status status-on">穩定黃燈</span></td>
-                        <td>低速連線</td>
-                        <td>連線速度降低 - 檢查線材品質</td>
-                    </tr>
-                    <tr>
-                        <td><span class="led-status status-blink">閃爍紅燈</span></td>
-                        <td>連線錯誤</td>
-                        <td>驗證網路設定和 IP 位址配置</td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <div class="info-box">
-                <strong>💡 網路速度指示器：</strong>
-                <ul style="margin-top: 10px; margin-left: 20px;">
-                    <li>綠燈 = 1 Gbps 或更高</li>
-                    <li>黃燈 = 100 Mbps</li>
-                    <li>紅燈 = 10 Mbps 或連線問題</li>
-                </ul>
+            <div class="bg-white overflow-hidden shadow rounded-lg p-6 border-t-4 border-amber-500">
+                <div class="text-lg font-medium text-slate-900">驅動 IC</div>
+                <p class="mt-2 text-sm text-slate-500">恆流 PWM 控制</p>
             </div>
-        </section>
+            <div class="bg-white overflow-hidden shadow rounded-lg p-6 border-t-4 border-rose-500">
+                <div class="text-lg font-medium text-slate-900">系統協作</div>
+                <p class="mt-2 text-sm text-slate-500">數據流完整鏈路</p>
+            </div>
+        </div>
+    </section>
 
-        <section id="troubleshooting" class="section">
-            <h2>🔧 故障排除</h2>
-            
-            <h3 style="color: #2ecc71; margin-top: 20px;">常見 LED 問題及解決方案</h3>
-            
-            <div class="info-box">
-                <strong>問題：所有 LED 不亮</strong>
-                <ol style="margin-top: 10px; margin-left: 20px;">
-                    <li>確認電源線已牢固連接</li>
-                    <li>檢查電源插座是否正常</li>
-                    <li>使用不同的電源線測試</li>
-                    <li>驗證電源開關是否處於 ON（開）的位置</li>
-                </ol>
+    <!-- Section 1: Protocols (簡化版保留) -->
+    <section id="protocols" class="bg-white py-12 border-y border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="lg:text-center mb-10">
+                <p class="text-base text-indigo-600 font-semibold tracking-wide uppercase">Communication Protocols</p>
+                <h3 class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+                    通訊協定比較
+                </h3>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-indigo-50 p-6 rounded-xl border border-indigo-200">
+                    <h4 class="text-xl font-bold text-indigo-800 mb-2">乙太網路 (Ethernet)</h4>
+                    <p class="text-sm text-slate-600">Gigabit 級別，支援影像實時大數據流</p>
+                </div>
+                <div class="bg-amber-50 p-6 rounded-xl border border-amber-200">
+                    <h4 class="text-xl font-bold text-amber-800 mb-2">序列通訊 (RS-485)</h4>
+                    <p class="text-sm text-slate-600">工業標準，抗噪強，適合控制指令</p>
+                </div>
+                <div class="bg-teal-50 p-6 rounded-xl border border-teal-200">
+                    <h4 class="text-xl font-bold text-teal-800 mb-2">光纖傳輸</h4>
+                    <p class="text-sm text-slate-600">長距離無損傳輸，無電磁干擾</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 2: Hardware Connectors (簡化版) -->
+    <section id="hardware" class="py-12 bg-slate-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h3 class="text-3xl font-bold text-slate-900 mb-8">硬體接頭與腳位定義</h3>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="bg-white p-6 rounded-xl border border-slate-200">
+                    <div class="text-3xl mb-2">🌐</div>
+                    <div class="text-xl font-bold text-slate-800">RJ45</div>
+                    <div class="text-xs text-slate-500">乙太網路介面</div>
+                </div>
+                <div class="bg-white p-6 rounded-xl border border-slate-200">
+                    <div class="text-3xl mb-2">🛡️</div>
+                    <div class="text-xl font-bold text-slate-800">航空插頭</div>
+                    <div class="text-xs text-slate-500">防水強固型</div>
+                </div>
+                <div class="bg-white p-6 rounded-xl border border-slate-200">
+                    <div class="text-3xl mb-2">💡</div>
+                    <div class="text-xl font-bold text-slate-800">光纖接頭</div>
+                    <div class="text-xs text-slate-500">長距離傳輸</div>
+                </div>
+                <div class="bg-white p-6 rounded-xl border border-slate-200">
+                    <div class="text-3xl mb-2">📟</div>
+                    <div class="text-xl font-bold text-slate-800">DB9 / RS232</div>
+                    <div class="text-xs text-slate-500">傳統控制介面</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 2.5: 接收卡技術深度解析（強化版） -->
+    <section id="receiving-card" class="py-12 bg-white border-y border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="lg:text-center mb-8">
+                <p class="text-base text-teal-600 font-semibold tracking-wide uppercase">Receiving Card Technology</p>
+                <h3 class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+                    接收卡：系統的數位中樞
+                </h3>
+                <p class="mt-4 max-w-2xl text-xl text-slate-500 lg:mx-auto">
+                    接收卡是 LED 顯示屏的「翻譯官」，負責將乙太網封包轉換為 HUB75 掃描信號
+                </p>
             </div>
 
-            <div class="info-box">
-                <strong>問題：LED 持續閃爍紅燈</strong>
-                <ol style="margin-top: 10px; margin-left: 20px;">
-                    <li>記錄閃爍模式（快/慢，重複次數）</li>
-                    <li>執行系統診斷</li>
-                    <li>檢查系統日誌檔案</li>
-                    <li>若問題持續，聯繫技術支援並提供 LED 模式</li>
-                </ol>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <!-- 左側：硬體規格 -->
+                <div class="bg-gradient-to-br from-teal-50 to-cyan-50 p-8 rounded-xl shadow-lg border border-teal-100">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="text-4xl">🧠</div>
+                        <h4 class="text-2xl font-bold text-teal-800">核心組成與規格</h4>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div class="bg-white p-4 rounded-lg border border-teal-200">
+                            <h5 class="font-bold text-slate-800 mb-2">📐 硬體組件</h5>
+                            <ul class="space-y-2 text-sm text-slate-600">
+                                <li class="flex items-start">
+                                    <span class="mr-2 text-teal-600">●</span>
+                                    <span><strong>FPGA：</strong>處理時序邏輯與像素映射</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="mr-2 text-teal-600">●</span>
+                                    <span><strong>MCU：</strong>微控制器負責系統管理</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="mr-2 text-teal-600">●</span>
+                                    <span><strong>Flash Memory：</strong>存儲映射參數與校正係數</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="mr-2 text-teal-600">●</span>
+                                    <span><strong>介面晶片：</strong>乙太網 PHY + LVDS 驅動</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="bg-white p-4 rounded-lg border border-teal-200">
+                            <h5 class="font-bold text-slate-800 mb-2">⚙️ 帶載能力</h5>
+                            <ul class="space-y-2 text-sm text-slate-600">
+                                <li class="flex items-start">
+                                    <span class="mr-2 text-teal-600">●</span>
+                                    <span><strong>解析度：</strong>512 × 384 像素 (NovaStar A8s)</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="mr-2 text-teal-600">●</span>
+                                    <span><strong>並行輸出：</strong>32 組 RGB / 128 組串聯</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右側：影像處理技術 -->
+                <div class="space-y-6">
+                    <div class="bg-white p-6 rounded-xl shadow-lg border border-slate-200">
+                        <h4 class="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                            <span>🎨</span> 影像處理功能
+                        </h4>
+                        <div class="space-y-4">
+                            <div class="border-l-4 border-teal-500 pl-4">
+                                <h5 class="font-bold text-slate-800">22-bit+ 高灰階技術</h5>
+                                <p class="text-sm text-slate-600 mt-1">
+                                    灰度提升 <strong class="text-teal-700">64 倍</strong>，解決低亮度下的細節遺失與色偏問題
+                                </p>
+                            </div>
+                            <div class="border-l-4 border-cyan-500 pl-4">
+                                <h5 class="font-bold text-slate-800">逐點校正 (Point by Point)</h5>
+                                <p class="text-sm text-slate-600 mt-1">
+                                    儲存每顆 LED 的<strong class="text-cyan-700">亮度與色度補償係數</strong>，消除燈珠差異
+                                </p>
+                            </div>
+                            <div class="border-l-4 border-indigo-500 pl-4">
+                                <h5 class="font-bold text-slate-800">LVDS 差分傳輸</h5>
+                                <p class="text-sm text-slate-600 mt-1">
+                                    減少連接線數量，改善 <strong class="text-indigo-700">EMC 電磁兼容性</strong>
+                                </p>
+                            </div>
+                            <div class="border-l-4 border-purple-500 pl-4">
+                                <h5 class="font-bold text-slate-800">低延遲模式</h5>
+                                <p class="text-sm text-slate-600 mt-1">
+                                    延遲可縮減至 <strong class="text-purple-700">1 幀</strong>（約 16.7ms @ 60Hz）
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-amber-50 p-4 rounded-lg border border-amber-200">
+                        <h5 class="font-bold text-amber-800 flex items-center gap-2 mb-2">
+                            <span>💡</span> 工作原理
+                        </h5>
+                        <ol class="list-decimal pl-5 space-y-1 text-sm text-amber-900">
+                            <li>接收來自發送卡的乙太網封包</li>
+                            <li>FPGA 解析封包標頭，比對 Flash 內的座標參數</li>
+                            <li>只抓取 (Latch) 符合自己區域的像素數據</li>
+                            <li>根據屏體走線方式重新映射為一維序列</li>
+                            <li>透過 HUB75 介面輸出至驅動 IC</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 5.5: HUB75 介面完整技術（全新區塊） -->
+    <section id="hub75" class="py-12 bg-gradient-to-b from-indigo-50 to-purple-50 border-y border-indigo-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="lg:text-center mb-10">
+                <p class="text-base text-indigo-600 font-semibold tracking-wide uppercase">Hardware Interface Protocol</p>
+                <h3 class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+                    HUB75 介面：物理與數據傳輸的橋樑
+                </h3>
+                <p class="mt-4 max-w-2xl text-xl text-slate-500 lg:mx-auto">
+                    連接接收卡與 LED 模組的標準 16-pin 介面協定
+                </p>
             </div>
 
-            <div class="info-box">
-                <strong>問題：網路 LED 不穩定</strong>
-                <ol style="margin-top: 10px; margin-left: 20px;">
-                    <li>確認網路線正確插入</li>
-                    <li>測試使用不同的網路連接埠</li>
-                    <li>驗證網路設定正確</li>
-                    <li>檢查是否有線材損壞或彎折</li>
-                </ol>
+            <!-- HUB75 接腳定義表 -->
+            <div class="bg-white rounded-2xl shadow-2xl overflow-hidden border-2 border-indigo-200 mb-8">
+                <div class="bg-indigo-600 px-6 py-4 flex justify-between items-center">
+                    <h4 class="text-xl font-bold text-white">HUB75 標準接腳定義 (16-Pin)</h4>
+                    <span class="text-xs bg-white text-indigo-600 px-3 py-1 rounded-full font-bold">Pinout Datasheet</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="bg-indigo-100 text-indigo-900 text-sm">
+                                <th class="px-6 py-3 text-left font-bold">Pin</th>
+                                <th class="px-6 py-3 text-left font-bold">訊號名稱</th>
+                                <th class="px-6 py-3 text-left font-bold">功能說明</th>
+                                <th class="px-6 py-3 text-left font-bold">類型</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-indigo-50">
+                            <tr class="hover:bg-indigo-50 transition">
+                                <td class="px-6 py-4 font-mono font-bold text-red-600">1-3</td>
+                                <td class="px-6 py-4 font-mono">R1, G1, B1</td>
+                                <td class="px-6 py-4 text-sm">上半部區域的紅、綠、藍色彩數據</td>
+                                <td class="px-6 py-4"><span class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs">Data</span></td>
+                            </tr>
+                            <tr class="hover:bg-indigo-50 transition">
+                                <td class="px-6 py-4 font-mono font-bold text-blue-600">4-6</td>
+                                <td class="px-6 py-4 font-mono">R2, G2, B2</td>
+                                <td class="px-6 py-4 text-sm">下半部區域的紅、綠、藍色彩數據</td>
+                                <td class="px-6 py-4"><span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs">Data</span></td>
+                            </tr>
+                            <tr class="hover:bg-indigo-50 transition">
+                                <td class="px-6 py-4 font-mono font-bold text-purple-600">7-11</td>
+                                <td class="px-6 py-4 font-mono">A, B, C, D, E</td>
+                                <td class="px-6 py-4 text-sm">行選擇信號（5-bit = 32 行掃描）<br><span class="text-xs text-purple-600">※ 64×64 模組必須啟用 E 腳位</span></td>
+                                <td class="px-6 py-4"><span class="bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs">Address</span></td>
+                            </tr>
+                            <tr class="hover:bg-indigo-50 transition">
+                                <td class="px-6 py-4 font-mono font-bold text-green-600">12</td>
+                                <td class="px-6 py-4 font-mono">CLK</td>
+                                <td class="px-6 py-4 text-sm">移位時鐘 (Shift Clock)，同步數據傳輸</td>
+                                <td class="px-6 py-4"><span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">Timing</span></td>
+                            </tr>
+                            <tr class="hover:bg-indigo-50 transition">
+                                <td class="px-6 py-4 font-mono font-bold text-yellow-600">13</td>
+                                <td class="px-6 py-4 font-mono">LAT</td>
+                                <td class="px-6 py-4 text-sm">鎖存信號 (Latch)，將暫存器數據輸出到 LED</td>
+                                <td class="px-6 py-4"><span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs">Control</span></td>
+                            </tr>
+                            <tr class="hover:bg-indigo-50 transition">
+                                <td class="px-6 py-4 font-mono font-bold text-orange-600">14</td>
+                                <td class="px-6 py-4 font-mono">OE</td>
+                                <td class="px-6 py-4 text-sm">輸出致能 (Output Enable)，控制 LED 點亮時間實現 PWM</td>
+                                <td class="px-6 py-4"><span class="bg-orange-100 text-orange-700 px-2 py-1 rounded text-xs">PWM</span></td>
+                            </tr>
+                            <tr class="hover:bg-indigo-50 transition">
+                                <td class="px-6 py-4 font-mono font-bold text-slate-600">15-16</td>
+                                <td class="px-6 py-4 font-mono">GND, VCC</td>
+                                <td class="px-6 py-4 text-sm">接地與電源（通常 5V）</td>
+                                <td class="px-6 py-4"><span class="bg-slate-100 text-slate-700 px-2 py-1 rounded text-xs">Power</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
-            <div class="warning-box">
-                <strong>📞 需要協助？</strong><br>
-                若您在閱讀 LED 指示或解決問題時遇到困難，請聯繫技術支援團隊，並提供：
-                <ul style="margin-top: 10px; margin-left: 20px;">
-                    <li>目前的 LED 狀態（顏色和模式）</li>
-                    <li>問題發生的時間點</li>
-                    <li>最近的系統變更</li>
-                    <li>任何錯誤訊息</li>
-                </ul>
-            </div>
-        </section>
+            <!-- HUB75 vs HUB75E 差異 -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <div class="bg-white p-6 rounded-xl shadow-lg border-t-4 border-indigo-500">
+                    <h4 class="text-xl font-bold text-indigo-800 mb-3 flex items-center gap-2">
+                        <span>📌</span> HUB75 (標準版)
+                    </h4>
+                    <ul class="space-y-2 text-sm text-slate-600">
+                        <li class="flex items-start">
+                            <span class="mr-2 text-indigo-500">●</span>
+                            <span><strong>行選擇：</strong>A, B, C, D (4-bit = 16 行)</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="mr-2 text-indigo-500">●</span>
+                            <span><strong>掃描方式：</strong>1/16 掃描</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="mr-2 text-indigo-500">●</span>
+                            <span><strong>適用：</strong>32×32、32×16 模組</span>
+                        </li>
+                    </ul>
+                </div>
 
-        <section class="section">
-            <h2>📖 快速參考</h2>
-            <div class="code-block">
-                <strong>LED 狀態摘要：</strong><br><br>
-                🟢 綠燈   = 正常運作<br>
-                🟡 黃燈   = 警告/注意<br>
-                🔴 紅燈   = 錯誤/故障<br>
-                🔵 藍燈   = 系統活動<br>
-                ⚫ 關閉   = 無電源/未連線<br>
-                💫 閃爍   = 處理中/資料傳輸
+                <div class="bg-white p-6 rounded-xl shadow-lg border-t-4 border-purple-500">
+                    <h4 class="text-xl font-bold text-purple-800 mb-3 flex items-center gap-2">
+                        <span>📌</span> HUB75E (擴展版)
+                    </h4>
+                    <ul class="space-y-2 text-sm text-slate-600">
+                        <li class="flex items-start">
+                            <span class="mr-2 text-purple-500">●</span>
+                            <span><strong>行選擇：</strong>A, B, C, D, E (5-bit = 32 行)</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="mr-2 text-purple-500">●</span>
+                            <span><strong>掃描方式：</strong>1/32 掃描</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="mr-2 text-purple-500">●</span>
+                            <span><strong>適用：</strong>64×64、64×32 模組</span>
+                        </li>
+                    </ul>
+                </div>
             </div>
-        </section>
-    </div>
 
-    <footer>
-        <p>&copy; 2026 LED 通訊指南。保留所有權利。</p>
-        <p>最後更新：2026 年 1 月 6 日</p>
+            <!-- 掃描原理說明 -->
+            <div class="bg-gradient-to-r from-purple-900 to-indigo-900 text-white p-8 rounded-2xl shadow-2xl">
+                <h4 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                    <span>🔄</span> 掃描原理 (Scan Way)
+                </h4>
+                <p class="text-purple-100 mb-4 leading-relaxed">
+                    HUB75 透過<strong>時分編碼</strong>實現掃描。1/32 掃描代表每隔 32 行同時點亮一行（例如第 1 行與第 33 行同時顯示），利用人眼視覺暫留效應呈現完整畫面。
+                </p>
+                <div class="bg-purple-950 p-4 rounded-lg border border-purple-700">
+                    <h5 class="font-bold text-purple-200 mb-2">計算公式：</h5>
+                    <p class="font-mono text-sm text-purple-100">
+                        掃描行數 = 模組高度 / 掃描方式<br>
+                        例：64 像素高 / 1/32 掃描 = 2 行同時驅動
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 5.6: 驅動 IC 完整技術 -->
+    <section id="driver-ic" class="py-12 bg-white border-y border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="lg:text-center mb-10">
+                <p class="text-base text-rose-600 font-semibold tracking-wide uppercase">LED Driver IC</p>
+                <h3 class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+                    驅動 IC：影像的最終執行者
+                </h3>
+                <p class="mt-4 max-w-2xl text-xl text-slate-500 lg:mx-auto">
+                    位於 LED 模組 PCB 上，控制每顆像素的點亮、滅與電流
+                </p>
+            </div>
+
+            <!-- 驅動類型說明 -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <div class="bg-gradient-to-br from-rose-50 to-pink-50 p-6 rounded-xl shadow-lg border border-rose-200">
+                    <h4 class="text-xl font-bold text-rose-800 mb-3">⚡ 恆流驅動 (Constant Current)</h4>
+                    <p class="text-sm text-slate-600 mb-3">
+                        最常用的驅動類型，確保電流不受電壓波動影響，保持亮度均勻與長壽命。
+                    </p>
+                    <div class="bg-white p-3 rounded border border-rose-300">
+                        <p class="text-xs text-slate-700">
+                            <strong>技術特點：</strong><br>
+                            ● 恆流精度：±3% (高階 IC 如 ICN2038)<br>
+                            ● 輸出通道：通常 16-24 通道<br>
+                            ● 電流範圍：5-60 mA 可調
+                        </p>
+                    </div>
+                </div>
+
+                <div class="bg-gradient-to-br from-amber-50 to-yellow-50 p-6 rounded-xl shadow-lg border border-amber-200">
+                    <h4 class="text-xl font-bold text-amber-800 mb-3">📊 PWM 驅動</h4>
+                    <p class="text-sm text-slate-600 mb-3">
+                        透過每秒數千次的快速開關來控制亮度，提供更精確的灰階與色彩深度。
+                    </p>
+                    <div class="bg-white p-3 rounded border border-amber-300">
+                        <p class="text-xs text-slate-700">
+                            <strong>技術參數：</strong><br>
+                            ● PWM 頻率：1920 Hz - 3840 Hz<br>
+                            ● 灰階深度：14-bit 至 16-bit<br>
+                            ● 刷新率：≥3840 Hz (高階應用)
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 驅動 IC 型號比較表 -->
+            <div class="bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl shadow-xl overflow-hidden border-2 border-slate-200 mb-8">
+                <div class="bg-slate-700 px-6 py-4 flex justify-between items-center">
+                    <h4 class="text-xl font-bold text-white">常見驅動 IC 型號比較</h4>
+                    <span class="text-xs bg-white text-slate-700 px-3 py-1 rounded-full font-bold">Engineering Reference</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="bg-slate-200 text-slate-900 text-sm">
+                                <th class="px-6 py-3 text-left font-bold">型號</th>
+                                <th class="px-6 py-3 text-left font-bold">傳輸協定</th>
+                                <th class="px-6 py-3 text-left font-bold">速率</th>
+                                <th class="px-6 py-3 text-left font-bold">特色</th>
+                                <th class="px-6 py-3 text-left font-bold">應用場景</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="px-6 py-4 font-mono font-bold text-indigo-700">TLC59284</td>
+                                <td class="px-6 py-4">SPI (菊花鏈)</td>
+                                <td class="px-6 py-4 font-mono text-sm"><span class="bg-green-100 text-green-800 px-2 py-1 rounded">35 MHz</span></td>
+                                <td class="px-6 py-4 text-sm">高速、16-bit 灰階</td>
+                                <td class="px-6 py-4 text-sm">高解析室內屏、POE 系統</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="px-6 py-4 font-mono font-bold text-purple-700">ICN2038</td>
+                                <td class="px-6 py-4">專有序列協定</td>
+                                <td class="px-6 py-4 font-mono text-sm"><span class="bg-blue-100 text-blue-800 px-2 py-1 rounded">25 MHz</span></td>
+                                <td class="px-6 py-4 text-sm">恆流精度 ±3%</td>
+                                <td class="px-6 py-4 text-sm">商業顯示、租賃屏</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="px-6 py-4 font-mono font-bold text-teal-700">WS2812B</td>
+                                <td class="px-6 py-4">NZR (非歸零碼)</td>
+                                <td class="px-6 py-4 font-mono text-sm"><span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded">800 kHz</span></td>
+                                <td class="px-6 py-4 text-sm">單線控制、內建 PWM</td>
+                                <td class="px-6 py-4 text-sm">Arduino 燈條、創客專案</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 控制訊號詳解 -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-blue-50 p-6 rounded-xl border-2 border-blue-200">
+                    <h5 class="font-bold text-blue-800 mb-2 flex items-center gap-2">
+                        <span>🔌</span> SCLK (Shift Clock)
+                    </h5>
+                    <p class="text-sm text-slate-600">
+                        移位時鐘，同步數據傳輸的時序基準。每個時鐘週期推移一位元數據。
+                    </p>
+                </div>
+                <div class="bg-green-50 p-6 rounded-xl border-2 border-green-200">
+                    <h5 class="font-bold text-green-800 mb-2 flex items-center gap-2">
+                        <span>📥</span> LAT (Latch)
+                    </h5>
+                    <p class="text-sm text-slate-600">
+                        鎖存訊號，將移位暫存器中的數據一次性轉移到輸出級。
+                    </p>
+                </div>
+                <div class="bg-orange-50 p-6 rounded-xl border-2 border-orange-200">
+                    <h5 class="font-bold text-orange-800 mb-2 flex items-center gap-2">
+                        <span>⚡</span> OE (Output Enable)
+                    </h5>
+                    <p class="text-sm text-slate-600">
+                        輸出致能，透過 PWM 佔空比控制 LED 實際點亮時間，實現灰階調節。
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 6: 系統協作流程（全新區塊） -->
+    <section id="workflow" class="py-12 bg-gradient-to-br from-slate-100 to-slate-200 border-y border-slate-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="lg:text-center mb-10">
+                <p class="text-base text-slate-600 font-semibold tracking-wide uppercase">System Collaboration</p>
+                <h3 class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+                    系統協作與協議轉換機制
+                </h3>
+                <p class="mt-4 max-w-2xl text-xl text-slate-500 lg:mx-auto">
+                    從影像產生到 LED 點亮的完整數據流程
+                </p>
+            </div>
+
+            <!-- 流程圖 -->
+            <div class="bg-white rounded-2xl shadow-2xl p-8 mb-8 border-2 border-slate-300">
+                <h4 class="text-2xl font-bold text-slate-900 mb-6 text-center">完整訊號鏈路</h4>
+                <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div class="flex-1 bg-gradient-to-br from-blue-100 to-blue-200 p-6 rounded-xl shadow-md border-2 border-blue-300 text-center">
+                        <div class="text-4xl mb-2">🖥️</div>
+                        <h5 class="font-bold text-blue-900">視訊源</h5>
+                        <p class="text-xs text-slate-600 mt-1">HDMI / DP / SDI</p>
+                    </div>
+                    <div class="text-3xl text-slate-400">→</div>
+                    <div class="flex-1 bg-gradient-to-br from-purple-100 to-purple-200 p-6 rounded-xl shadow-md border-2 border-purple-300 text-center">
+                        <div class="text-4xl mb-2">📡</div>
+                        <h5 class="font-bold text-purple-900">發送卡</h5>
+                        <p class="text-xs text-slate-600 mt-1">封裝為乙太網封包</p>
+                    </div>
+                    <div class="text-3xl text-slate-400">→</div>
+                    <div class="flex-1 bg-gradient-to-br from-teal-100 to-teal-200 p-6 rounded-xl shadow-md border-2 border-teal-300 text-center">
+                        <div class="text-4xl mb-2">🧠</div>
+                        <h5 class="font-bold text-teal-900">接收卡 (FPGA)</h5>
+                        <p class="text-xs text-slate-600 mt-1">解封裝 + 映射</p>
+                    </div>
+                    <div class="text-3xl text-slate-400">→</div>
+                    <div class="flex-1 bg-gradient-to-br from-indigo-100 to-indigo-200 p-6 rounded-xl shadow-md border-2 border-indigo-300 text-center">
+                        <div class="text-4xl mb-2">📌</div>
+                        <h5 class="font-bold text-indigo-900">HUB75 介面</h5>
+                        <p class="text-xs text-slate-600 mt-1">時序 + 數據</p>
+                    </div>
+                    <div class="text-3xl text-slate-400">→</div>
+                    <div class="flex-1 bg-gradient-to-br from-rose-100 to-rose-200 p-6 rounded-xl shadow-md border-2 border-rose-300 text-center">
+                        <div class="text-4xl mb-2">⚡</div>
+                        <h5 class="font-bold text-rose-900">驅動 IC</h5>
+                        <p class="text-xs text-slate-600 mt-1">PWM 驅動</p>
+                    </div>
+                    <div class="text-3xl text-slate-400">→</div>
+                    <div class="flex-1 bg-gradient-to-br from-green-100 to-green-200 p-6 rounded-xl shadow-md border-2 border-green-300 text-center">
+                        <div class="text-4xl mb-2">💡</div>
+                        <h5 class="font-bold text-green-900">LED 點亮</h5>
+                        <p class="text-xs text-slate-600 mt-1">顯示畫面</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 詳細步驟說明 -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-white p-6 rounded-xl shadow-lg border border-slate-200">
+                    <h4 class="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                        <span>1️⃣</span> 數據解封裝 (De-encapsulation)
+                    </h4>
+                    <p class="text-sm text-slate-600 mb-3">
+                        接收卡的 FPGA 接收來自發送卡的乙太網封包，解析標頭中的目標區域座標與像素數據。
+                    </p>
+                    <div class="bg-slate-50 p-3 rounded border border-slate-200 font-mono text-xs">
+                        [MAC Header] | [Card ID] | [X, Y 座標] | [RGB 數據] | [CRC]
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-lg border border-slate-200">
+                    <h4 class="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                        <span>2️⃣</span> 重新映射 (Remapping)
+                    </h4>
+                    <p class="text-sm text-slate-600 mb-3">
+                        根據屏體的走線方式 (Sequence)，將二維影像轉換為一維序列位元流。例如：Z 字形掃描或蛇形掃描。
+                    </p>
+                    <div class="bg-slate-50 p-3 rounded border border-slate-200 font-mono text-xs">
+                        2D Image [x, y] → 1D Stream [bit 0, bit 1, bit 2...]
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-lg border border-slate-200">
+                    <h4 class="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                        <span>3️⃣</span> 協議編碼 (Protocol Encoding)
+                    </h4>
+                    <p class="text-sm text-slate-600 mb-3">
+                        FPGA 將位元流透過 HUB75 引腳輸出。數據必須與 CLK/LAT 時序嚴格匹配驅動 IC 的移位暫存器要求。
+                    </p>
+                    <div class="bg-slate-50 p-3 rounded border border-slate-200 font-mono text-xs">
+                        FPGA → [R1,G1,B1,R2,G2,B2] + [CLK, LAT, OE] → HUB75
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-lg border border-slate-200">
+                    <h4 class="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                        <span>4️⃣</span> 最終驅動 (LED Drive)
+                    </h4>
+                    <p class="text-sm text-slate-600 mb-3">
+                        驅動 IC 接收序列信號，根據 OE 信號的 PWM 佔空比點亮 LED 燈珠，實現精確的灰階與色彩控制。
+                    </p>
+                    <div class="bg-slate-50 p-3 rounded border border-slate-200 font-mono text-xs">
+                        驅動 IC → PWM 控制 → LED 點亮 (恆流驅動)
+                    </div>
+                </div>
+            </div>
+
+            <!-- 系統比喻 -->
+            <div class="mt-8 bg-gradient-to-r from-amber-500 to-orange-500 text-white p-6 rounded-xl shadow-lg">
+                <h4 class="text-xl font-bold mb-3 flex items-center gap-2">
+                    <span>💡</span> 系統比喻
+                </h4>
+                <p class="text-amber-50 leading-relaxed">
+                    LED 系統就像一個大型火車站。<strong>影像數據</strong>是旅客；<strong>接收卡</strong>是調度官，負責規劃座位；
+                    <strong>HUB75 介面</strong>是月台閘門，確保旅客按順序排隊；而<strong>驅動 IC</strong>則是火車車廂，最終承載並展示每位旅客的位置。
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-white py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <p class="text-slate-400">© 2025 LED 技術知識庫 | 完整技術指南 v5.0</p>
+            <p class="text-slate-500 text-sm mt-2">涵蓋：接收卡、HUB75、驅動 IC、系統協作流程</p>
+        </div>
     </footer>
+
+    <!-- JavaScript -->
+    <script>
+        function scrollToSection(id) {
+            document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
 </body>
 </html>
