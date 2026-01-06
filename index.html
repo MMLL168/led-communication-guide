@@ -3,811 +3,843 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LED 顯示屏串接通訊原理 | 互動指南 v4.2 (All-in-One)</title>
+    <title>LED Display Communication Guide | LED 顯示屏通訊系統完整指南</title>
+    <meta name="description" content="深入解析 LED 顯示屏的通訊架構：從發送卡、接收卡到驅動 IC，涵蓋乙太網協定、像素映射與控制系統的完整技術指南。">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif; }
-        
-        /* Chart Styles */
-        .chart-container {
-            position: relative;
-            width: 100%;
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
-            height: 350px;
-            max-height: 400px;
+        html {
+            scroll-behavior: smooth;
         }
-        @media (min-width: 768px) {
-            .chart-container { height: 400px; }
+        .hero-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
-
-        /* Canvas Styles */
-        .canvas-sim-container {
-            width: 100%;
-            height: 300px;
-            background-color: #f8fafc;
-            border-radius: 0.5rem;
-            border: 1px solid #e2e8f0;
-            position: relative;
-            overflow: hidden;
+        .card-hover {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
-
-        /* Connector Card Styles */
-        .connector-card {
-            transition: all 0.2s ease;
-        }
-        .connector-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
-        .connector-card.active {
-            border-color: #4f46e5;
-            background-color: #eff6ff;
-            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
-        }
-
-        /* Modal Styles */
-        .modal {
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s ease-in-out;
-            pointer-events: none;
-        }
-        .modal.active {
-            opacity: 1;
-            visibility: visible;
-            pointer-events: auto;
-        }
-        .modal-content {
-            transform: scale(0.95);
-            transition: transform 0.3s ease-in-out;
-        }
-        .modal.active .modal-content {
-            transform: scale(1);
-        }
-
-        /* Pin Table Styles */
-        .pin-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.85rem;
-        }
-        .pin-table th {
-            text-align: left;
-            padding: 8px;
-            background-color: #f1f5f9;
-            color: #475569;
-            border-bottom: 2px solid #e2e8f0;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-        .pin-table td {
-            padding: 8px;
-            border-bottom: 1px solid #e2e8f0;
-            font-family: monospace;
-        }
-        .pin-table tr:last-child td {
-            border-bottom: none;
-        }
-        .wire-dot {
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            margin-right: 6px;
-            border: 1px solid #cbd5e1;
-            vertical-align: middle;
-        }
-
-        /* Mapping Grid Styles */
-        .cab-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            aspect-ratio: 16/9;
-        }
-        .cab-cell {
-            background: #e2e8f0;
-            border: 2px solid #cbd5e1;
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            color: #64748b;
-            cursor: pointer;
-            transition: all 0.2s;
-            position: relative;
-        }
-        .cab-cell:hover {
-            border-color: #6366f1;
-            color: #4f46e5;
-        }
-        .cab-cell.active {
-            background: #4f46e5;
-            color: white;
-            border-color: #312e81;
-        }
-        .cab-coord {
-            position: absolute;
-            bottom: 4px;
-            right: 4px;
-            font-size: 0.6rem;
-            opacity: 0.7;
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
         }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 leading-relaxed">
-
+<body class="bg-slate-50 text-slate-900">
     <!-- Navigation -->
-    <header class="bg-white shadow-sm sticky top-0 z-50">
+    <nav class="bg-white shadow-lg sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
+            <div class="flex justify-between h-16">
                 <div class="flex items-center">
-                    <span class="text-2xl mr-2">📟</span>
-                    <h1 class="text-xl font-bold text-slate-900 tracking-tight">LED 顯示屏串接通訊指南 <span class="text-xs bg-red-600 text-white px-2 py-0.5 rounded ml-2">v4.2 All-in-One</span></h1>
+                    <span class="text-2xl font-bold text-purple-600">LED Display Guide</span>
                 </div>
-                <nav class="hidden md:flex space-x-6 items-center">
-                    <button onclick="scrollToSection('protocols')" class="text-slate-500 hover:text-indigo-600 px-2 py-2 text-sm font-medium">通訊協定</button>
-                    <button onclick="scrollToSection('hardware')" class="text-slate-500 hover:text-indigo-600 px-2 py-2 text-sm font-medium">硬體接頭</button>
-                    <button onclick="scrollToSection('topology')" class="text-slate-500 hover:text-indigo-600 px-2 py-2 text-sm font-medium">串接拓撲</button>
-                    <button onclick="scrollToSection('mapping')" class="text-indigo-600 px-2 py-2 text-sm font-bold border-b-2 border-indigo-600">像素映射</button>
-                    <button onclick="scrollToSection('control')" class="text-slate-500 hover:text-indigo-600 px-2 py-2 text-sm font-medium">控制系統</button>
-                    
-                    <!-- [ADDED] Link to Implementation Page -->
-                    <a href="implementation.html" class="ml-2 bg-slate-800 text-white px-3 py-1.5 rounded-md text-sm font-bold shadow hover:bg-slate-700 flex items-center transition group border border-slate-700">
-                        <span>工程實作手冊</span>
-                        <svg class="w-4 h-4 ml-2 group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-                    </a>
-                </nav>
+                <div class="hidden md:flex items-center space-x-4">
+                    <a href="#overview" class="text-slate-700 hover:text-purple-600 px-3 py-2 rounded-md text-sm font-medium">概述</a>
+                    <a href="#hardware" class="text-slate-700 hover:text-purple-600 px-3 py-2 rounded-md text-sm font-medium">硬體</a>
+                    <a href="#topology" class="text-slate-700 hover:text-purple-600 px-3 py-2 rounded-md text-sm font-medium">拓撲</a>
+                    <a href="#mapping" class="text-slate-700 hover:text-purple-600 px-3 py-2 rounded-md text-sm font-medium">映射</a>
+                    <a href="#control" class="text-slate-700 hover:text-purple-600 px-3 py-2 rounded-md text-sm font-medium">控制</a>
+                </div>
             </div>
         </div>
-    </header>
+    </nav>
 
     <!-- Hero Section -->
-    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div class="text-center">
-            <h2 class="text-3xl font-extrabold text-slate-900 sm:text-4xl">
-                大型 LED 顯示屏如何「對話」？
-            </h2>
-            <p class="mt-4 max-w-2xl mx-auto text-xl text-slate-500">
-                深入解析嵌入式控制系統、訊號協定與物理層架構。
-            </p>
-        </div>
-        
-        <div class="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-3">
-            <div class="bg-white overflow-hidden shadow rounded-lg p-6 border-t-4 border-indigo-500">
-                <div class="text-lg font-medium text-slate-900">通訊協定</div>
-                <p class="mt-2 text-sm text-slate-500">Ethernet (TCP/IP) vs RS-485 序列通訊。</p>
-            </div>
-            <div class="bg-white overflow-hidden shadow rounded-lg p-6 border-t-4 border-teal-500">
-                <div class="text-lg font-medium text-slate-900">硬體介面</div>
-                <p class="mt-2 text-sm text-slate-500">含完整 Pin Definition 與訊號流向圖。</p>
-            </div>
-            <div class="bg-white overflow-hidden shadow rounded-lg p-6 border-t-4 border-amber-500">
-                <div class="text-lg font-medium text-slate-900">像素映射</div>
-                <p class="mt-2 text-sm text-slate-500">解析 FPGA 如何過濾並顯示正確的畫面區塊。</p>
-            </div>
-        </div>
-    </section>
-
-    <!-- Section 1: Protocols -->
-    <section id="protocols" class="bg-white py-12 border-y border-slate-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="lg:text-center mb-10">
-                <p class="text-base text-indigo-600 font-semibold tracking-wide uppercase">Communication Protocols</p>
-                <h3 class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-                    通訊協定比較
-                </h3>
-            </div>
-
-            <div class="flex flex-col lg:flex-row gap-12 items-center">
-                <div class="w-full lg:w-1/2">
-                    <div class="chart-container bg-slate-50 rounded-xl p-4 shadow-inner">
-                        <canvas id="protocolRadarChart"></canvas>
-                    </div>
-                    <div class="mt-4 text-center text-sm text-slate-400">
-                        點擊右側按鈕切換單一協定特徵
-                    </div>
-                </div>
-
-                <div class="w-full lg:w-1/2 space-y-6">
-                    <div class="flex flex-wrap gap-2 justify-center lg:justify-start">
-                        <button onclick="updateChart('all')" class="px-4 py-2 bg-slate-800 text-white rounded-md hover:bg-slate-700 transition">全部比較</button>
-                        <button onclick="updateChart('ethernet')" class="px-4 py-2 bg-indigo-100 text-indigo-700 rounded-md hover:bg-indigo-200 transition">乙太網路 (Ethernet)</button>
-                        <button onclick="updateChart('rs485')" class="px-4 py-2 bg-amber-100 text-amber-700 rounded-md hover:bg-amber-200 transition">序列通訊 (RS-485)</button>
-                        <button onclick="updateChart('fiber')" class="px-4 py-2 bg-teal-100 text-teal-700 rounded-md hover:bg-teal-200 transition">光纖傳輸</button>
-                    </div>
-
-                    <div id="protocol-desc" class="bg-slate-50 p-6 rounded-lg border border-slate-200 min-h-[12rem]">
-                        <h4 class="text-lg font-bold text-slate-900 mb-2">乙太網路 (Ethernet / TCP/IP)</h4>
-                        <p class="text-slate-600 mb-2">
-                            <strong>應用場景：</strong> 目前業界大型 LED 屏與高解析度電視牆的主流標準。
-                        </p>
-                        <ul class="list-disc pl-5 space-y-1 text-slate-600 text-sm">
-                            <li><strong>頻寬：</strong> Gigabit (1000Mbps) 級別，支援影像實時大數據流。</li>
-                            <li><strong>物理層：</strong> 使用標準 RJ45 接頭與 Cat5e/Cat6 雙絞線。</li>
-                            <li><strong>機制：</strong> 用於發送卡(Master)對接收卡(Slave)的數據分發。</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Section 2: Hardware Connectors -->
-    <section id="hardware" class="py-12 bg-slate-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="mb-8">
-                <h3 class="text-3xl font-bold text-slate-900">硬體接頭與腳位定義 (Pin Definitions)</h3>
-                <p class="mt-4 text-slate-500">
-                    點擊卡片查看詳細規格、應用場景及 Datasheet 等級的腳位圖。
+    <div class="hero-gradient">
+        <div class="max-w-7xl mx-auto py-16 px-4 sm:px-6 lg:py-24 lg:px-8">
+            <div class="text-center">
+                <h1 class="text-4xl font-extrabold text-white sm:text-5xl md:text-6xl">
+                    LED 顯示屏通訊系統
+                </h1>
+                <p class="mt-3 max-w-md mx-auto text-base text-purple-100 sm:text-lg md:mt-5 md:text-xl md:max-w-3xl">
+                    從硬體架構到通訊協定的完整技術解析
                 </p>
-            </div>
-
-            <!-- Connector Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div onclick="selectConnector('rj45')" id="card-rj45" class="connector-card active cursor-pointer bg-white p-6 rounded-xl border border-slate-200 relative overflow-hidden group">
-                    <div class="text-3xl mb-2">🌐</div>
-                    <div class="text-xl font-bold text-slate-800">RJ45</div>
-                    <div class="text-xs text-slate-500">乙太網路介面</div>
-                </div>
-
-                <div onclick="selectConnector('aviation')" id="card-aviation" class="connector-card cursor-pointer bg-white p-6 rounded-xl border border-slate-200 relative overflow-hidden group">
-                    <div class="text-3xl mb-2">🛡️</div>
-                    <div class="text-xl font-bold text-slate-800">航空插頭</div>
-                    <div class="text-xs text-slate-500">防水強固型</div>
-                </div>
-
-                <div onclick="selectConnector('fiber')" id="card-fiber" class="connector-card cursor-pointer bg-white p-6 rounded-xl border border-slate-200 relative overflow-hidden group">
-                    <div class="text-3xl mb-2">💡</div>
-                    <div class="text-xl font-bold text-slate-800">光纖接頭</div>
-                    <div class="text-xs text-slate-500">長距離傳輸</div>
-                </div>
-
-                <div onclick="selectConnector('dsub')" id="card-dsub" class="connector-card cursor-pointer bg-white p-6 rounded-xl border border-slate-200 relative overflow-hidden group">
-                    <div class="text-3xl mb-2">📟</div>
-                    <div class="text-xl font-bold text-slate-800">DB9 / RS232</div>
-                    <div class="text-xs text-slate-500">傳統控制介面</div>
-                </div>
-            </div>
-
-            <!-- Detail View -->
-            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <div class="flex flex-col lg:flex-row">
-                    <!-- Left Column: Description -->
-                    <div class="lg:w-1/2 p-8 border-b lg:border-b-0 lg:border-r border-slate-100">
-                        <div class="flex items-center gap-4 mb-6">
-                            <div class="bg-indigo-50 p-4 rounded-lg text-4xl" id="connector-icon">🌐</div>
-                            <div>
-                                <h4 class="text-2xl font-bold text-indigo-700" id="connector-title">RJ45 (乙太網路介面)</h4>
-                                <span class="text-sm font-mono text-slate-400">Standard T568B</span>
-                            </div>
-                        </div>
-                        <div class="space-y-4 text-slate-600">
-                            <p id="connector-desc">
-                                LED 顯示屏最核心的數據傳輸介面。通常使用 Cat5e 或 Cat6 網路線連接發送卡與接收卡，以及箱體與箱體之間的級聯 (Cascade)。
-                            </p>
-                            <div class="bg-slate-50 p-4 rounded-md border border-slate-200">
-                                <h5 class="font-bold text-slate-800 text-sm mb-2">應用筆記：</h5>
-                                <div id="connector-specs" class="text-sm space-y-1">
-                                    <!-- Specs injected by JS -->
-                                </div>
-                            </div>
-                        </div>
+                <div class="mt-5 max-w-md mx-auto sm:flex sm:justify-center md:mt-8">
+                    <div class="rounded-md shadow">
+                        <a href="#overview" class="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-purple-600 bg-white hover:bg-purple-50 md:py-4 md:text-lg md:px-10">
+                            開始學習
+                        </a>
                     </div>
-
-                    <!-- Right Column: Pin Definition Table -->
-                    <div class="lg:w-1/2 bg-slate-50 p-0 flex flex-col">
-                        <div class="bg-slate-200 px-6 py-3 border-b border-slate-300 flex justify-between items-center">
-                            <span class="font-bold text-slate-700 text-sm">PIN DEFINITION (腳位定義)</span>
-                            <span class="text-xs bg-white px-2 py-0.5 rounded border border-slate-300 text-slate-500">Datasheet View</span>
-                        </div>
-                        <div id="pinout-container" class="flex-grow p-6 overflow-x-auto">
-                            <!-- Table injected by JS -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Section 3: Topology Simulation -->
-    <section id="topology" class="py-12 bg-white border-y border-slate-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="lg:flex lg:items-start lg:gap-12">
-                <div class="lg:w-1/3 mb-8 lg:mb-0">
-                    <h3 class="text-3xl font-bold text-slate-900 mb-4">串接拓撲模擬</h3>
-                    <p class="text-slate-500 mb-6">
-                        選擇不同的佈線方式，觀察<strong class="text-amber-600">即時訊號流向 (動態模擬)</strong> 與斷線反應。
-                    </p>
-                    <div class="space-y-3">
-                        <button onclick="setTopology('chain')" class="w-full text-left px-4 py-3 rounded-lg border border-slate-200 hover:border-indigo-500 hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition topo-btn active-topo" data-type="chain">
-                            <div class="font-bold text-slate-800">菊花鏈 (Daisy Chain)</div>
-                            <div class="text-xs text-slate-500">單線串接，成本最低。</div>
-                        </button>
-                        <button onclick="setTopology('star')" class="w-full text-left px-4 py-3 rounded-lg border border-slate-200 hover:border-indigo-500 hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition topo-btn" data-type="star">
-                            <div class="font-bold text-slate-800">星狀拓撲 (Star)</div>
-                            <div class="text-xs text-slate-500">高可靠性，佈線複雜。</div>
-                        </button>
-                        <button onclick="setTopology('ring')" class="w-full text-left px-4 py-3 rounded-lg border border-slate-200 hover:border-indigo-500 hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition topo-btn" data-type="ring">
-                            <div class="font-bold text-slate-800">環狀備援 (Redundant Ring)</div>
-                            <div class="text-xs text-slate-500">主備援迴路，斷線自動保護。</div>
-                        </button>
-                    </div>
-                    <div id="topo-explanation" class="mt-6 p-4 bg-amber-50 text-amber-800 text-sm rounded border border-amber-200">
-                        <strong>模擬說明：</strong> 觀察黃色訊號點的移動。在菊花鏈模式下，如果中間斷開，後端所有螢幕都會失去訊號（變紅）。
-                    </div>
-                </div>
-                <div class="lg:w-2/3">
-                    <div class="canvas-sim-container shadow-md">
-                        <canvas id="topologyCanvas"></canvas>
-                    </div>
-                    <div class="flex justify-between mt-2 text-sm text-slate-400 px-2">
-                        <span>🖥️ 發送卡 (Sender)</span>
-                        <span>📺 LED 箱體 (Cabinets)</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- SECTION 4: PIXEL MAPPING -->
-    <section id="mapping" class="py-12 bg-slate-100 border-y border-slate-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="lg:text-center mb-8">
-                <h3 class="text-3xl leading-8 font-extrabold tracking-tight text-slate-900">
-                    像素映射與定址原理 (Pixel Mapping)
-                </h3>
-                <p class="mt-4 max-w-2xl text-xl text-slate-500 lg:mx-auto">
-                    影像資料如何分割？第二個屏怎麼知道它的位置？答案在於 FPGA 邏輯與 Flash 參數。
-                </p>
-            </div>
-
-            <div class="flex flex-col lg:flex-row gap-8 items-start">
-                <!-- Left: Interactive Grid -->
-                <div class="w-full lg:w-1/2">
-                    <div class="bg-white p-4 rounded-xl shadow-lg border border-slate-200">
-                        <div class="flex justify-between items-end mb-2">
-                            <span class="text-xs font-bold text-slate-400">SOURCE: 1920 x 1080 (Signal Stream)</span>
-                            <span class="text-xs text-indigo-500">點擊箱體查看詳細邏輯 ↓</span>
-                        </div>
-                        <div class="cab-grid" id="mappingGrid"></div>
-                        <div class="mt-4 p-3 bg-slate-50 border border-slate-200 rounded text-sm font-mono text-slate-600" id="gridConsole">
-                            > System Ready. Click a cabinet to inspect.
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Right: Technical Explanation -->
-                <div class="w-full lg:w-1/2 space-y-6">
-                    <div class="bg-indigo-900 text-white p-6 rounded-xl shadow-lg relative overflow-hidden">
-                        <div class="absolute top-0 right-0 -mt-2 -mr-2 w-24 h-24 bg-indigo-700 rounded-full opacity-50 blur-xl"></div>
-                        <h4 class="text-xl font-bold mb-3 flex items-center gap-2"><span>🤔</span> 技術解密：定址原理</h4>
-                        <p class="text-indigo-200 text-sm mb-4 leading-relaxed">
-                            <strong>問：</strong>物理上串接在一起，第二個屏怎麼知道它是第二個？<br>
-                            <strong>答：</strong>不是靠硬體 DIP 開關，而是靠<strong>軟體燒錄 (Soft-Mapping)</strong>。
-                        </p>
-                        <ol class="list-decimal pl-5 space-y-2 text-sm text-indigo-100">
-                            <li><strong>設定階段：</strong> PC 軟體發送指令，將 <code class="bg-indigo-800 px-1 rounded">Start_X, Start_Y</code> 參數寫入每張接收卡的 <strong>SPI Flash</strong> 記憶體中。</li>
-                            <li><strong>運行階段：</strong> 發送卡廣播完整的影像資料流 (Broadcast)。</li>
-                            <li><strong>FPGA 過濾：</strong> 每張卡的 FPGA 實時比對資料流標頭，<strong>只抓取 (Latch)</strong> 符合自己 Flash 內座標參數的像素數據。</li>
-                        </ol>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- SECTION 5: CONTROL SYSTEMS (UPDATED FOR All-in-One) -->
-    <section id="control" class="py-12 bg-slate-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h3 class="text-3xl font-bold text-center text-slate-900 mb-10">控制系統架構</h3>
-            <div class="flex justify-center mb-8">
-                <div class="bg-white p-1 rounded-lg border border-slate-300 inline-flex shadow-sm overflow-x-auto max-w-full">
-                    <button onclick="toggleSystem('sync')" id="btn-sync" class="px-4 md:px-6 py-2 rounded-md text-sm font-bold bg-indigo-600 text-white shadow transition-all whitespace-nowrap">同步控制</button>
-                    <button onclick="toggleSystem('async')" id="btn-async" class="px-4 md:px-6 py-2 rounded-md text-sm font-bold text-slate-500 hover:bg-slate-100 transition-all whitespace-nowrap">非同步控制</button>
-                    <button onclick="toggleSystem('iot')" id="btn-iot" class="px-4 md:px-6 py-2 rounded-md text-sm font-bold text-slate-500 hover:bg-slate-100 transition-all border-l border-slate-200 whitespace-nowrap">AIoT 無線</button>
-                    <button onclick="toggleSystem('softsender')" id="btn-softsender" class="px-4 md:px-6 py-2 rounded-md text-sm font-bold text-slate-500 hover:bg-slate-100 transition-all border-l border-slate-200 whitespace-nowrap">RPi 5 軟體發送</button>
-                    <!-- NEW All-in-One BUTTON -->
-                    <button onclick="toggleSystem('allinone')" id="btn-allinone" class="px-4 md:px-6 py-2 rounded-md text-sm font-bold text-slate-500 hover:bg-slate-100 transition-all border-l border-slate-200 whitespace-nowrap">單板全整合</button>
-                </div>
-            </div>
-            <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-slate-200 max-w-4xl mx-auto relative">
-                <div class="p-8 pb-20">
-                    
-                    <!-- Sync Content -->
-                    <div id="sys-content-sync" class="sys-content block">
-                        <div class="flex flex-col md:flex-row items-center gap-8">
-                            <div class="md:w-1/3 flex justify-center"><div class="text-8xl">🖥️ ➡️ 📺</div></div>
-                            <div class="md:w-2/3">
-                                <h4 class="text-2xl font-bold text-indigo-700 mb-2">同步控制系統</h4>
-                                <p class="text-slate-600 mb-4 font-medium">所見即所得：LED 屏實時顯示電腦螢幕的內容。</p>
-                                <ul class="space-y-3 text-slate-600 text-sm">
-                                    <li class="flex items-start"><span class="mr-2 text-green-500">✓</span><span><strong>硬體：</strong> PC GPU + 發送卡 (Sender)。</span></li>
-                                    <li class="flex items-start"><span class="mr-2 text-green-500">✓</span><span><strong>資料流：</strong> Gigabit Ethernet 傳輸。</span></li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Async Content -->
-                    <div id="sys-content-async" class="sys-content hidden">
-                        <div class="flex flex-col md:flex-row items-center gap-8">
-                            <div class="md:w-1/3 flex justify-center"><div class="text-8xl">💾 ➡️ 📺</div></div>
-                            <div class="md:w-2/3">
-                                <h4 class="text-2xl font-bold text-amber-700 mb-2">非同步控制系統</h4>
-                                <p class="text-slate-600 mb-4 font-medium">存儲播放：內建嵌入式處理器，脫機運作。</p>
-                                <ul class="space-y-3 text-slate-600 text-sm">
-                                    <li class="flex items-start"><span class="mr-2 text-amber-500">✓</span><span><strong>硬體：</strong> Android/Linux 播放盒。</span></li>
-                                    <li class="flex items-start"><span class="mr-2 text-amber-500">✓</span><span><strong>流程：</strong> 雲端下發 → 本地存儲播放。</span></li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Soft Sender Content -->
-                    <div id="sys-content-softsender" class="sys-content hidden">
-                        <div class="flex flex-col md:flex-row items-center gap-8">
-                            <div class="md:w-1/3 flex justify-center text-center">
-                                <div class="text-6xl mb-2">🍓 ➡️ 🌐 ➡️ 📦</div>
-                            </div>
-                            <div class="md:w-2/3">
-                                <h4 class="text-2xl font-bold text-purple-600 mb-2">RPi 5 軟體發送 (Soft-Sender)</h4>
-                                <p class="text-slate-600 mb-4 font-medium">極客方案：RPi 5 直接取代發送盒，用網孔直推接收卡。</p>
-                                <div class="bg-purple-50 p-3 rounded-md border border-purple-100 mb-3">
-                                    <strong class="text-purple-800 text-sm block mb-1">技術原理 (Layer 2 Raw Socket)：</strong>
-                                    <ul class="list-disc pl-4 text-xs text-purple-700 space-y-1">
-                                        <li>RPi 5 CPU 強大，可生成 Gigabit 等級的 LED 封包。</li>
-                                        <li><strong>限制：</strong> 僅支援 <span class="font-bold">Colorlight (5A-75B/E)</span> 等開源友善接收卡。</li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- IoT Content -->
-                    <div id="sys-content-iot" class="sys-content hidden">
-                        <div class="flex flex-col md:flex-row items-center gap-8">
-                            <div class="md:w-1/3 flex justify-center text-center">
-                                <div class="text-6xl mb-2">🍓 ))) 📶 ))) 📡</div>
-                            </div>
-                            <div class="md:w-2/3">
-                                <h4 class="text-2xl font-bold text-emerald-600 mb-2">AIoT / 無線分散式架構</h4>
-                                <p class="text-slate-600 mb-4 font-medium">創客/物聯網方案：RPi 作為 Server，ESP32 作為無線接收節點。</p>
-                                <ul class="space-y-2 text-slate-600 text-sm">
-                                    <li class="flex items-start"><span class="mr-2 text-emerald-500">●</span><span><strong>ESP32 角色：</strong> 取代接收卡。接收 Wi-Fi 數據 → DMA → HUB75 介面。</span></li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- All-in-One Content (NEW v4.2) -->
-                    <div id="sys-content-allinone" class="sys-content hidden">
-                        <div class="flex flex-col md:flex-row items-center gap-8">
-                            <div class="md:w-1/3 flex justify-center text-center">
-                                <div class="text-6xl mb-2">🍓 🎩 ➡️ 🧱</div>
-                            </div>
-                            <div class="md:w-2/3">
-                                <h4 class="text-2xl font-bold text-red-600 mb-2">單板全整合 (All-in-One)</h4>
-                                <p class="text-slate-600 mb-4 font-medium">極致整合：電腦 + 發送卡 + 接收卡 = 單張 RPi 5。</p>
-                                <div class="bg-red-50 p-4 rounded-md border border-red-100">
-                                    <h5 class="text-red-800 font-bold text-sm mb-2">硬體要求：</h5>
-                                    <ul class="list-disc pl-4 text-xs text-red-700 space-y-1">
-                                        <li><strong>邏輯層 (Software):</strong> RPi 5 負責影像生成與 PWM 掃描邏輯 (取代 FPGA)。</li>
-                                        <li><strong>物理層 (Hardware):</strong> 必須搭配 <strong class="bg-white px-1 rounded border border-red-200">Active HAT (緩衝板)</strong>。</li>
-                                        <li><strong>功能：</strong> HAT 上的 74AHCT245 晶片負責將 3.3V GPIO 升壓至 5V 驅動 HUB75 面板。</li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-                <!-- Modal Button -->
-                <div class="bg-slate-50 px-8 py-4 border-t border-slate-100 text-sm text-slate-500 flex justify-between items-center absolute bottom-0 w-full">
-                    <span id="sys-footer-text">需要電腦保持開機連接</span>
-                    <button onclick="openHwModal()" class="text-indigo-600 hover:text-indigo-800 font-bold bg-indigo-50 hover:bg-indigo-100 px-4 py-2 rounded transition flex items-center gap-2 border border-indigo-200 shadow-sm">
-                        <span>了解硬體訊號流</span>
-                        <span>→</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Footer -->
-    <footer class="bg-slate-900 text-white py-8 mt-12">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <p class="text-slate-400">© 2025 LED 技術知識庫 | 基於一般業界通訊與串接標準報告製作</p>
-        </div>
-    </footer>
-
-    <!-- Hardware Detail Modal -->
-    <div id="hw-modal" class="modal fixed inset-0 z-[100] flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-slate-900 bg-opacity-70 backdrop-blur-sm" onclick="closeHwModal()"></div>
-        <div class="modal-content bg-white w-full max-w-4xl rounded-2xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh]">
-            <div class="bg-indigo-600 px-6 py-4 flex justify-between items-center">
-                <h3 class="text-xl font-bold text-white">同步控制系統：硬體訊號流架構</h3>
-                <button onclick="closeHwModal()" class="text-indigo-200 hover:text-white text-2xl">&times;</button>
-            </div>
-            <div class="p-6 overflow-y-auto bg-slate-50">
-                <div class="flex flex-col md:flex-row gap-4 justify-between items-stretch mb-8 relative">
-                    <!-- Flow Steps -->
-                    <div class="flex-1 bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center relative flow-arrow z-10">
-                        <div class="text-3xl mb-1">💻</div><h4 class="font-bold text-sm">訊號源</h4><div class="text-xs text-slate-500">HDMI / CPU</div>
-                    </div>
-                    <div class="flex-1 bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center relative flow-arrow z-10">
-                        <div class="text-3xl mb-1">🎛️</div><h4 class="font-bold text-sm">處理單元</h4><div class="text-xs text-slate-500">Scaling/Logic</div>
-                    </div>
-                    <div class="flex-1 bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center relative flow-arrow z-10">
-                        <div class="text-3xl mb-1">🌐</div><h4 class="font-bold text-sm">傳輸層</h4><div class="text-xs text-slate-500">Ethernet / GPIO</div>
-                    </div>
-                    <div class="flex-1 bg-indigo-50 p-4 rounded-xl shadow-sm border border-indigo-200 flex flex-col items-center z-10">
-                        <div class="text-3xl mb-1">📺</div><h4 class="font-bold text-sm text-indigo-800">接收端</h4><div class="text-xs text-indigo-600">RX Card / HAT</div>
-                    </div>
-                </div>
-                <div class="text-sm text-slate-600 bg-white p-4 rounded border">
-                    <strong>工程師筆記：</strong> 在 All-in-One 架構中，傳統的發送卡與接收卡被 RPi 5 的軟體邏輯 + Active HAT 的物理緩衝所取代。
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- JavaScript Logic -->
-    <script>
-        // --- Modal Logic ---
-        function openHwModal() { document.getElementById('hw-modal').classList.add('active'); document.body.style.overflow = 'hidden'; }
-        function closeHwModal() { document.getElementById('hw-modal').classList.remove('active'); document.body.style.overflow = ''; }
-        document.addEventListener('keydown', function(event) { if (event.key === "Escape") closeHwModal(); });
+    <!-- Section 1: Overview -->
+    <section id="overview" class="py-12 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="lg:text-center">
+                <p class="text-base text-purple-600 font-semibold tracking-wide uppercase">系統架構</p>
+                <h2 class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+                    LED 顯示屏通訊概述
+                </h2>
+                <p class="mt-4 max-w-2xl text-xl text-slate-500 lg:mx-auto">
+                    理解從視訊源到像素點亮的完整數據流程
+                </p>
+            </div>
 
-        // --- Navigation ---
-        function scrollToSection(id) { document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' }); }
+            <div class="mt-10">
+                <div class="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+                    <div class="card-hover bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-lg shadow-md border border-blue-100">
+                        <div class="text-4xl mb-4">🖥️</div>
+                        <h3 class="text-lg font-medium text-slate-900">1. 視訊處理器</h3>
+                        <p class="mt-2 text-base text-slate-500">
+                            接收 HDMI/DP 輸入，處理縮放、色彩轉換等前期工作
+                        </p>
+                    </div>
 
-        // --- Protocol Chart ---
-        const ctxProtocol = document.getElementById('protocolRadarChart').getContext('2d');
-        const protocolData = {
-            ethernet: { label: '乙太網路', data: [9, 9, 8, 7, 10], borderColor: 'rgba(79, 70, 229, 1)', backgroundColor: 'rgba(79, 70, 229, 0.2)', desc: '主流標準。Gbps級速度，RJ45介面，距離100m+。' },
-            rs485: { label: 'RS-485', data: [3, 7, 9, 9, 5], borderColor: 'rgba(245, 158, 11, 1)', backgroundColor: 'rgba(245, 158, 11, 0.2)', desc: '工業標準。低速控制指令，抗噪強，距離1km+。' },
-            fiber: { label: '光纖', data: [10, 10, 10, 4, 6], borderColor: 'rgba(20, 184, 166, 1)', backgroundColor: 'rgba(20, 184, 166, 0.2)', desc: '長距離無損傳輸，無電磁干擾，成本高。' }
-        };
-        let currentChart = new Chart(ctxProtocol, {
-            type: 'radar',
-            data: { labels: ['傳輸速度', '傳輸距離', '抗干擾能力', '成本效益', '普及程度'], datasets: [protocolData.ethernet, protocolData.rs485] },
-            options: { responsive: true, maintainAspectRatio: false, scales: { r: { suggestedMin: 0, suggestedMax: 10, ticks: { display: false } } }, plugins: { legend: { position: 'bottom' } } }
-        });
-        function updateChart(type) {
-            const datasets = type === 'all' ? [protocolData.ethernet, protocolData.rs485, protocolData.fiber] : [protocolData[type]];
-            currentChart.data.datasets = datasets;
-            currentChart.update();
-            const descEl = document.querySelector('#protocol-desc p');
-            const titleEl = document.querySelector('#protocol-desc h4');
-            if (type !== 'all') { titleEl.textContent = protocolData[type].label; descEl.textContent = protocolData[type].desc; }
-            else { titleEl.textContent = "綜合比較"; descEl.textContent = "乙太網路用於影像，RS-485 用於控制，光纖用於長距離。"; }
-        }
+                    <div class="card-hover bg-gradient-to-br from-purple-50 to-pink-50 p-6 rounded-lg shadow-md border border-purple-100">
+                        <div class="text-4xl mb-4">📡</div>
+                        <h3 class="text-lg font-medium text-slate-900">2. 發送卡系統</h3>
+                        <p class="mt-2 text-base text-slate-500">
+                            將視訊訊號轉換為乙太網封包，透過多個網口分發數據
+                        </p>
+                    </div>
 
-        // --- Hardware Connectors & DATA ---
-        const connectorData = {
-            rj45: {
-                icon: "🌐", title: "RJ45 (乙太網路介面)",
-                desc: "LED 顯示屏核心介面。連接發送卡與接收卡，需使用 T568B 標準以確保 Gigabit 速率穩定。",
-                specs: "<li>標準：TIA/EIA-568-B</li><li>速率：1000BASE-T (Gigabit)</li><li>線材：Cat5e / Cat6</li>",
-                pinoutHTML: `
-                <table class="pin-table">
-                    <thead><tr><th style="width:10%">Pin</th><th>Color (T568B)</th><th>Gigabit Signal</th></tr></thead>
-                    <tbody>
-                        <tr><td>1</td><td><span class="wire-dot" style="background:linear-gradient(90deg, white 50%, orange 50%)"></span>白/橙</td><td><strong>BI_DA+</strong> (TX+)</td></tr>
-                        <tr><td>2</td><td><span class="wire-dot" style="background:orange"></span>橙色</td><td><strong>BI_DA-</strong> (TX-)</td></tr>
-                        <tr><td>3</td><td><span class="wire-dot" style="background:linear-gradient(90deg, white 50%, green 50%)"></span>白/綠</td><td><strong>BI_DB+</strong> (RX+)</td></tr>
-                        <tr><td>4</td><td><span class="wire-dot" style="background:blue"></span>藍色</td><td class="text-slate-400">BI_DC+</td></tr>
-                        <tr><td>5</td><td><span class="wire-dot" style="background:linear-gradient(90deg, white 50%, blue 50%)"></span>白/藍</td><td class="text-slate-400">BI_DC-</td></tr>
-                        <tr><td>6</td><td><span class="wire-dot" style="background:green"></span>綠色</td><td><strong>BI_DB-</strong> (RX-)</td></tr>
-                        <tr><td>7</td><td><span class="wire-dot" style="background:linear-gradient(90deg, white 50%, brown 50%)"></span>白/棕</td><td class="text-slate-400">BI_DD+</td></tr>
-                        <tr><td>8</td><td><span class="wire-dot" style="background:brown"></span>棕色</td><td class="text-slate-400">BI_DD-</td></tr>
-                    </tbody>
-                </table>
-                <div class="mt-2 text-xs text-slate-400">* BI = Bi-directional (Gigabit 全雙工使用 4 對線)</div>
-                `
-            },
-            aviation: {
-                icon: "🛡️", title: "航空插頭 (Aviation Plug)",
-                desc: "戶外屏與租賃屏專用。具備防水環與鎖扣，防止震動脫落。",
-                specs: "<li>防水等級：IP65 / IP67</li><li>類型：3 Pin (Power), 4 Pin (Signal)</li>",
-                pinoutHTML: `
-                <table class="pin-table">
-                    <thead><tr><th colspan="3" style="text-align:center; background:#e2e8f0;">常見 3-Pin 電源定義</th></tr></thead>
-                    <tbody>
-                        <tr><td>1 / L</td><td class="text-red-700 font-bold">Line</td><td>火線 (棕/紅)</td></tr>
-                        <tr><td>2 / N</td><td class="text-blue-700 font-bold">Neutral</td><td>零線 (藍/黑)</td></tr>
-                        <tr><td>3 / PE</td><td class="text-green-700 font-bold">Ground</td><td>地線 (黃綠)</td></tr>
-                    </tbody>
-                </table>
-                <div class="mt-3 p-2 bg-yellow-50 text-xs text-yellow-800 border border-yellow-200 rounded">⚠️ 注意：訊號用航空頭定義各廠牌(Neutrik/Seetronic)可能不同，請詳閱箱體手冊。</div>
-                `
-            },
-            fiber: {
-                icon: "💡", title: "光纖介面 (Fiber Optic)",
-                desc: "控制室距離 > 100m 時使用。需配合 SFP 模組進行光電轉換。",
-                specs: "<li>接頭：LC (SFP) / SC</li><li>模式：Single Mode (單模)</li>",
-                pinoutHTML: `
-                <div class="flex flex-col items-center justify-center h-48 text-slate-500">
-                    <div class="text-5xl mb-2">TX ⇄ RX</div>
-                    <p class="text-sm font-bold">Cross Connection</p>
-                    <p class="text-xs mt-1">光纖無電氣腳位，僅區分發送與接收</p>
+                    <div class="card-hover bg-gradient-to-br from-green-50 to-teal-50 p-6 rounded-lg shadow-md border border-green-100">
+                        <div class="text-4xl mb-4">📺</div>
+                        <h3 class="text-lg font-medium text-slate-900">3. 接收卡陣列</h3>
+                        <p class="mt-2 text-base text-slate-500">
+                            解析封包並驅動對應區域的 LED 模組
+                        </p>
+                    </div>
                 </div>
-                `
-            },
-            dsub: {
-                icon: "📟", title: "DB9 / RS-232",
-                desc: "傳統序列通訊，用於連接光感探頭或舊型設備。",
-                specs: "<li>介面：DE-9 (Male/Female)</li><li>協定：Async Serial</li>",
-                pinoutHTML: `
-                <table class="pin-table">
-                    <thead><tr><th>Pin</th><th>Name</th><th>Function</th></tr></thead>
-                    <tbody>
-                        <tr><td>2</td><td><strong>RXD</strong></td><td>Receive Data (接收)</td></tr>
-                        <tr><td>3</td><td><strong>TXD</strong></td><td>Transmit Data (發送)</td></tr>
-                        <tr><td>5</td><td><strong>GND</strong></td><td>Ground (地線)</td></tr>
-                        <tr class="bg-slate-50 text-slate-400"><td>Others</td><td>NC</td><td>No Connection</td></tr>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 2: Hardware Components -->
+    <section id="hardware" class="py-12 bg-slate-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="lg:text-center mb-10">
+                <p class="text-base text-indigo-600 font-semibold tracking-wide uppercase">硬體組件</p>
+                <h2 class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+                    關鍵硬體與連接器
+                </h2>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Sending Card -->
+                <div class="bg-white rounded-xl shadow-lg p-8 border-t-4 border-indigo-500">
+                    <h3 class="text-2xl font-bold text-slate-900 mb-4">發送卡 (Sending Card)</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <div class="flex items-center justify-center h-12 w-12 rounded-md bg-indigo-500 text-white text-2xl">
+                                    🔌
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <h4 class="text-lg font-medium text-slate-900">輸入介面</h4>
+                                <p class="mt-2 text-base text-slate-500">
+                                    DVI/HDMI/DP 視訊輸入，支援 4K 解析度
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <div class="flex items-center justify-center h-12 w-12 rounded-md bg-indigo-500 text-white text-2xl">
+                                    🌐
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <h4 class="text-lg font-medium text-slate-900">網路輸出</h4>
+                                <p class="mt-2 text-base text-slate-500">
+                                    多個千兆乙太網口（通常 4-8 個），支援 Jumbo Frame
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="bg-indigo-50 p-4 rounded-lg border border-indigo-200">
+                            <p class="text-sm text-indigo-800">
+                                <strong>典型規格：</strong>NovaStar MX40 Pro / Colorlight X2 系列
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Receiving Card -->
+                <div class="bg-white rounded-xl shadow-lg p-8 border-t-4 border-green-500">
+                    <h3 class="text-2xl font-bold text-slate-900 mb-4">接收卡 (Receiving Card)</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <div class="flex items-center justify-center h-12 w-12 rounded-md bg-green-500 text-white text-2xl">
+                                    🔗
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <h4 class="text-lg font-medium text-slate-900">網路輸入</h4>
+                                <p class="mt-2 text-base text-slate-500">
+                                    RJ45 乙太網接口，支援菊花鏈串接
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <div class="flex items-center justify-center h-12 w-12 rounded-md bg-green-500 text-white text-2xl">
+                                    ⚡
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <h4 class="text-lg font-medium text-slate-900">RGB 輸出</h4>
+                                <p class="mt-2 text-base text-slate-500">
+                                    多組並聯 HUB 板連接器（16-32 組 RGB）
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+                            <p class="text-sm text-green-800">
+                                <strong>帶載能力：</strong>通常可控制 256×256 到 512×384 像素
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+<!-- Section 2.5: Receiving Card Deep Dive -->
+<section id="receiving-card" class="py-12 bg-white border-y border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="lg:text-center mb-8">
+            <p class="text-base text-teal-600 font-semibold tracking-wide uppercase">Receiving Card Technology</p>
+            <h3 class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+                接收卡技術深度解析
+            </h3>
+            <p class="mt-4 max-w-2xl text-xl text-slate-500 lg:mx-auto">
+                接收卡是 LED 顯示屏的「翻譯器」與「大腦」，負責將數位訊號轉換為精確的像素控制。
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="bg-gradient-to-br from-teal-50 to-cyan-50 p-8 rounded-xl shadow-lg border border-teal-100">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="text-4xl">🧠</div>
+                    <h4 class="text-2xl font-bold text-teal-800">典範案例：NovaStar A8s</h4>
+                </div>
+                
+                <div class="space-y-4">
+                    <div class="bg-white p-4 rounded-lg border border-teal-200">
+                        <h5 class="font-bold text-slate-800 mb-2">📐 硬體規格</h5>
+                        <ul class="space-y-2 text-sm text-slate-600">
+                            <li class="flex items-start">
+                                <span class="mr-2 text-teal-600">●</span>
+                                <span><strong>尺寸：</strong>70.0 mm × 45.0 mm（超緊湊設計）</span>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="mr-2 text-teal-600">●</span>
+                                <span><strong>帶載能力：</strong>512 × 384 像素</span>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="mr-2 text-teal-600">●</span>
+                                <span><strong>並行輸出：</strong>32 組 RGB / 128 組串聯</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-lg border border-teal-200">
+                        <h5 class="font-bold text-slate-800 mb-2">⚙️ 核心組件</h5>
+                        <ul class="space-y-2 text-sm text-slate-600">
+                            <li class="flex items-start">
+                                <span class="mr-2 text-teal-600">●</span>
+                                <span><strong>FPGA：</strong>處理時序邏輯與像素映射</span>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="mr-2 text-teal-600">●</span>
+                                <span><strong>MCU：</strong>微控制器負責系統管理</span>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="mr-2 text-teal-600">●</span>
+                                <span><strong>Flash Memory：</strong>存儲映射參數</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <div class="bg-white p-6 rounded-xl shadow-lg border border-slate-200">
+                    <h4 class="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                        <span>🎨</span> 影像處理技術
+                    </h4>
+                    <div class="space-y-4">
+                        <div class="border-l-4 border-teal-500 pl-4">
+                            <h5 class="font-bold text-slate-800">Image Booster</h5>
+                            <p class="text-sm text-slate-600 mt-1">
+                                提供 <strong class="text-teal-700">16-bit 灰度校正</strong>（65,536 級），修復低灰階色偏。
+                            </p>
+                        </div>
+                        <div class="border-l-4 border-cyan-500 pl-4">
+                            <h5 class="font-bold text-slate-800">22-bit+ 技術</h5>
+                            <p class="text-sm text-slate-600 mt-1">
+                                將灰度提升 <strong class="text-cyan-700">64 倍</strong>，增強暗部細節與畫面流暢度。
+                            </p>
+                        </div>
+                        <div class="border-l-4 border-indigo-500 pl-4">
+                            <h5 class="font-bold text-slate-800">低延遲模式</h5>
+                            <p class="text-sm text-slate-600 mt-1">
+                                配合特定驅動 IC，延遲可縮減至 <strong class="text-indigo-700">1 幀</strong>（約 16.7ms @ 60Hz）。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-amber-50 p-4 rounded-lg border border-amber-200">
+                    <h5 class="font-bold text-amber-800 flex items-center gap-2 mb-2">
+                        <span>💡</span> 工作原理
+                    </h5>
+                    <ol class="list-decimal pl-5 space-y-1 text-sm text-amber-900">
+                        <li>接收來自發送卡的乙太網封包</li>
+                        <li>FPGA 解析封包標頭，比對 Flash 內的座標參數</li>
+                        <li>只抓取 (Latch) 符合自己區域的像素數據</li>
+                        <li>驅動 IC 根據 PWM 訊號點亮對應的 LED</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+    <!-- Section 3: Network Topology -->
+    <section id="topology" class="py-12 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="lg:text-center mb-10">
+                <p class="text-base text-purple-600 font-semibold tracking-wide uppercase">網路拓撲</p>
+                <h2 class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+                    連接架構設計
+                </h2>
+            </div>
+
+            <div class="space-y-8">
+                <!-- Daisy Chain -->
+                <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl shadow-lg p-8 border border-purple-100">
+                    <h3 class="text-2xl font-bold text-purple-900 mb-4">🔗 菊花鏈 (Daisy Chain)</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <p class="text-slate-700 mb-4">
+                                最常見的連接方式，接收卡串聯成一條鏈路。
+                            </p>
+                            <div class="bg-white p-4 rounded-lg border border-purple-200">
+                                <p class="font-mono text-sm text-slate-800">
+                                    發送卡 → 接收卡1 → 接收卡2 → 接收卡3 → ...
+                                </p>
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex items-center text-sm">
+                                <span class="text-green-600 mr-2">✓</span>
+                                <span>佈線簡單，節省網線成本</span>
+                            </div>
+                            <div class="flex items-center text-sm">
+                                <span class="text-green-600 mr-2">✓</span>
+                                <span>適合長條形或矩形螢幕</span>
+                            </div>
+                            <div class="flex items-center text-sm">
+                                <span class="text-red-600 mr-2">✗</span>
+                                <span>單點故障會影響後續節點</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Star Topology -->
+                <div class="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl shadow-lg p-8 border border-blue-100">
+                    <h3 class="text-2xl font-bold text-blue-900 mb-4">⭐ 星形拓撲 (Star Topology)</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <p class="text-slate-700 mb-4">
+                                每張接收卡獨立連接到中央交換機或發送卡。
+                            </p>
+                            <div class="bg-white p-4 rounded-lg border border-blue-200">
+                                <p class="font-mono text-sm text-slate-800">
+                                    發送卡/交換機 ← → 接收卡1<br>
+                                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↓<br>
+                                    &nbsp;&nbsp;&nbsp;接收卡2, 3, 4...
+                                </p>
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex items-center text-sm">
+                                <span class="text-green-600 mr-2">✓</span>
+                                <span>故障隔離性好</span>
+                            </div>
+                            <div class="flex items-center text-sm">
+                                <span class="text-green-600 mr-2">✓</span>
+                                <span>可靠性高，易於維護</span>
+                            </div>
+                            <div class="flex items-center text-sm">
+                                <span class="text-red-600 mr-2">✗</span>
+                                <span>需要更多網線和交換機埠</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+<!-- Section 3.5: Redundancy Mechanisms -->
+<section id="redundancy" class="py-12 bg-gradient-to-b from-slate-50 to-white border-y border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="lg:text-center mb-10">
+            <p class="text-base text-green-600 font-semibold tracking-wide uppercase">System Reliability</p>
+            <h3 class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+                系統備援機制與故障分析
+            </h3>
+            <p class="mt-4 max-w-2xl text-xl text-slate-500 lg:mx-auto">
+                商業顯示環境中的「生命線」：如何確保單點故障不影響整體系統？
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+            <!-- Loop Backup Card -->
+            <div class="bg-white p-6 rounded-xl shadow-lg border-t-4 border-green-500">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="bg-green-100 p-3 rounded-lg text-2xl">🔄</div>
+                    <h4 class="text-xl font-bold text-green-800">環路備援 (Loop Backup)</h4>
+                </div>
+                <p class="text-slate-600 mb-4">
+                    發送卡與接收卡形成 <strong>閉環拓撲</strong>。當主路徑斷線時，訊號自動從備援路徑反向傳輸。
+                </p>
+                <div class="bg-green-50 p-4 rounded-md border border-green-200">
+                    <h5 class="font-bold text-green-800 text-sm mb-2">技術細節：</h5>
+                    <ul class="list-disc pl-4 text-xs text-green-700 space-y-1">
+                        <li>需要發送卡支援雙網口輸出</li>
+                        <li>自動偵測主路徑故障（< 100ms）</li>
+                        <li>適用於菊花鏈拓撲的容錯升級</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Dual Card Backup -->
+            <div class="bg-white p-6 rounded-xl shadow-lg border-t-4 border-blue-500">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="bg-blue-100 p-3 rounded-lg text-2xl">🎴</div>
+                    <h4 class="text-xl font-bold text-blue-800">雙卡備份 (Dual Card)</h4>
+                </div>
+                <p class="text-slate-600 mb-4">
+                    同一 HUB 板安裝 <strong>兩張接收卡</strong>，主卡失效時備份卡立即接管驅動任務。
+                </p>
+                <div class="bg-blue-50 p-4 rounded-md border border-blue-200">
+                    <h5 class="font-bold text-blue-800 text-sm mb-2">應用場景：</h5>
+                    <ul class="list-disc pl-4 text-xs text-blue-700 space-y-1">
+                        <li>高可靠性要求（金融、交通樞紐）</li>
+                        <li>熱插拔維修，不影響顯示</li>
+                        <li>增加硬體成本約 30-50%</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Failure Analysis Diagram -->
+        <div class="bg-red-50 p-8 rounded-xl border-2 border-red-200 shadow-inner">
+            <h4 class="text-2xl font-bold text-red-800 mb-4 flex items-center gap-2">
+                <span>⚠️</span> 故障影響分析：菊花鏈斷線
+            </h4>
+            <div class="flex flex-col md:flex-row items-center gap-6">
+                <div class="md:w-1/3">
+                    <div class="text-6xl text-center mb-2">🖥️ → 📺 → ❌ → 📺 → 📺</div>
+                    <p class="text-center text-xs text-red-600 font-mono">Sender → Cab1 → [FAIL] → Cab3 → Cab4</p>
+                </div>
+                <div class="md:w-2/3">
+                    <h5 class="font-bold text-red-900 mb-2">問題描述：</h5>
+                    <p class="text-sm text-red-800 mb-3">
+                        若系統未做環路備份，當 <strong>第 2 張接收卡損壞</strong> 時，由於訊號無法傳遞，
+                        <strong class="bg-red-200 px-1 rounded">所有串接在其後的設備（第 3、4 排）皆會黑屏</strong>。
+                    </p>
+                    <h5 class="font-bold text-red-900 mb-2">診斷方式：</h5>
+                    <ul class="list-disc pl-5 text-sm text-red-800 space-y-1">
+                        <li>觀察接收卡上的 <strong class="text-green-600">綠色指示燈</strong></li>
+                        <li>快閃 8 次 = 備份模式運作中</li>
+                        <li>慢閃 3 次 = 網線正常但無視訊輸入</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+    <!-- Section 4: Pixel Mapping -->
+    <section id="mapping" class="py-12 bg-slate-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="lg:text-center mb-10">
+                <p class="text-base text-teal-600 font-semibold tracking-wide uppercase">像素映射</p>
+                <h2 class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+                    數據分發與地址映射
+                </h2>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg p-8">
+                <h3 class="text-2xl font-bold text-slate-900 mb-6">映射原理</h3>
+                
+                <div class="space-y-6">
+                    <div class="bg-gradient-to-r from-teal-50 to-cyan-50 p-6 rounded-lg border border-teal-200">
+                        <h4 class="text-lg font-bold text-teal-900 mb-3">1️⃣ 虛擬畫布劃分</h4>
+                        <p class="text-slate-700 mb-3">
+                            配置軟體將整個顯示區域視為一張虛擬畫布（如 1920×1080），並劃分為多個矩形區域。
+                        </p>
+                        <div class="bg-white p-4 rounded border border-teal-300">
+                            <p class="font-mono text-sm text-slate-800">
+                                接收卡1: (0,0) → (512,256)<br>
+                                接收卡2: (512,0) → (1024,256)<br>
+                                接收卡3: (0,256) → (512,512)
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-lg border border-purple-200">
+                        <h4 class="text-lg font-bold text-purple-900 mb-3">2️⃣ 封包標記</h4>
+                        <p class="text-slate-700 mb-3">
+                            發送卡將每個像素數據封裝成乙太網幀，標頭包含目標接收卡 ID 和像素座標。
+                        </p>
+                        <div class="bg-white p-4 rounded border border-purple-300">
+                            <p class="text-sm text-slate-800">
+                                <strong>封包結構：</strong><br>
+                                [MAC Header] | [Card ID] | [X, Y座標] | [RGB數據] | [CRC校驗]
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border border-blue-200">
+                        <h4 class="text-lg font-bold text-blue-900 mb-3">3️⃣ 選擇性接收</h4>
+                        <p class="text-slate-700">
+                            接收卡檢查封包標頭，只抓取屬於自己座標範圍的數據，忽略其他封包。
+                            這種機制允許多張接收卡共享同一條網路鏈路。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+<!-- Section 4.5: Pixel Load Calculator -->
+<section id="load-calculator" class="py-12 bg-slate-50 border-y border-slate-200">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-8">
+            <p class="text-base text-indigo-600 font-semibold tracking-wide uppercase">Engineering Tool</p>
+            <h3 class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-slate-900">
+                像素負載計算器
+            </h3>
+            <p class="mt-4 text-xl text-slate-500">
+                避免單埠過載導致畫面不穩定或黑屏。
+            </p>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-xl p-8 border border-slate-200">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                    <label for="screenWidth" class="block text-sm font-bold text-slate-700 mb-2">螢幕寬度 (像素)</label>
+                    <input id="screenWidth" type="number" placeholder="1920" 
+                           class="w-full p-3 border-2 border-slate-300 rounded-lg focus:border-indigo-500 focus:outline-none">
+                </div>
+                <div>
+                    <label for="screenHeight" class="block text-sm font-bold text-slate-700 mb-2">螢幕高度 (像素)</label>
+                    <input id="screenHeight" type="number" placeholder="1080" 
+                           class="w-full p-3 border-2 border-slate-300 rounded-lg focus:border-indigo-500 focus:outline-none">
+                </div>
+            </div>
+
+            <div class="mb-6">
+                <label for="portCount" class="block text-sm font-bold text-slate-700 mb-2">網口數量</label>
+                <input id="portCount" type="number" placeholder="4" min="1" 
+                       class="w-full p-3 border-2 border-slate-300 rounded-lg focus:border-indigo-500 focus:outline-none">
+            </div>
+
+            <button onclick="calculatePixelLoad()" 
+                    class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-6 rounded-lg transition shadow-lg">
+                🧮 計算負載
+            </button>
+
+            <div id="loadResult" class="mt-6 p-6 rounded-lg border-2 hidden">
+                <!-- Result will be injected here -->
+            </div>
+
+            <div class="mt-6 bg-amber-50 p-4 rounded-lg border border-amber-200">
+                <h5 class="font-bold text-amber-800 flex items-center gap-2 mb-2">
+                    <span>📘</span> 工程準則
+                </h5>
+                <ul class="list-disc pl-5 text-sm text-amber-900 space-y-1">
+                    <li>單埠上限：約 <strong>650,000 像素</strong></li>
+                    <li>建議留 <strong>15-20%</strong> 餘裕，避免滿載運行</li>
+                    <li>若超載：畫面會出現花屏、卡頓或區域性黑屏</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+    <!-- Section 5: Control Systems -->
+    <section id="control" class="py-12 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="lg:text-center mb-10">
+                <p class="text-base text-red-600 font-semibold tracking-wide uppercase">控制系統</p>
+                <h2 class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+                    通訊協定與控制邏輯
+                </h2>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Ethernet Protocol -->
+                <div class="bg-gradient-to-br from-red-50 to-orange-50 rounded-xl shadow-lg p-8 border border-red-100">
+                    <h3 class="text-2xl font-bold text-red-900 mb-4">🌐 乙太網協定</h3>
+                    <div class="space-y-4">
+                        <div class="bg-white p-4 rounded-lg border border-red-200">
+                            <h4 class="font-bold text-slate-800 mb-2">標準協定</h4>
+                            <ul class="list-disc pl-5 text-sm text-slate-600 space-y-1">
+                                <li>IEEE 802.3 乙太網標準</li>
+                                <li>UDP 協定傳輸（低延遲優先）</li>
+                                <li>Jumbo Frame 支援（9000 bytes MTU）</li>
+                            </ul>
+                        </div>
+
+                        <div class="bg-white p-4 rounded-lg border border-red-200">
+                            <h4 class="font-bold text-slate-800 mb-2">專有協定</h4>
+                            <p class="text-sm text-slate-600">
+                                各廠商開發的私有協定（如 NovaStar 的 MCTRL、Colorlight 的 M系列協定），
+                                提供更高效的壓縮和錯誤校正機制。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Refresh & Gray Scale -->
+                <div class="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl shadow-lg p-8 border border-blue-100">
+                    <h3 class="text-2xl font-bold text-blue-900 mb-4">🎨 刷新率與灰度</h3>
+                    <div class="space-y-4">
+                        <div class="bg-white p-4 rounded-lg border border-blue-200">
+                            <h4 class="font-bold text-slate-800 mb-2">刷新率控制</h4>
+                            <p class="text-sm text-slate-600 mb-2">
+                                典型範圍：1920 Hz - 3840 Hz
+                            </p>
+                            <p class="text-xs text-slate-500">
+                                高刷新率減少閃爍，適合攝影機拍攝場景（如演唱會、運動賽事）
+                            </p>
+                        </div>
+
+                        <div class="bg-white p-4 rounded-lg border border-blue-200">
+                            <h4 class="font-bold text-slate-800 mb-2">灰度深度</h4>
+                            <p class="text-sm text-slate-600 mb-2">
+                                14-bit 至 16-bit（16,384 - 65,536 級）
+                            </p>
+                            <p class="text-xs text-slate-500">
+                                更高的灰度深度提供更平滑的色彩過渡和暗部細節
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+<!-- Section 5.5: Driver IC Protocol -->
+<section id="driver-ic" class="py-12 bg-white border-y border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="lg:text-center mb-10">
+            <p class="text-base text-purple-600 font-semibold tracking-wide uppercase">Low-Level Hardware</p>
+            <h3 class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+                驅動 IC 與通訊協定
+            </h3>
+            <p class="mt-4 max-w-2xl text-xl text-slate-500 lg:mx-auto">
+                從數位訊號到 LED 點亮：驅動 IC 是最後一哩路的「執行者」。
+            </p>
+        </div>
+
+        <!-- Protocol Comparison Table -->
+        <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl shadow-xl overflow-hidden border border-purple-100 mb-8">
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="bg-purple-600 text-white">
+                            <th class="px-6 py-4 text-left text-sm font-bold uppercase">協定類型</th>
+                            <th class="px-6 py-4 text-left text-sm font-bold uppercase">傳輸速率</th>
+                            <th class="px-6 py-4 text-left text-sm font-bold uppercase">控制訊號</th>
+                            <th class="px-6 py-4 text-left text-sm font-bold uppercase">應用案例</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-purple-100">
+                        <tr class="hover:bg-purple-50 transition">
+                            <td class="px-6 py-4">
+                                <div class="font-bold text-purple-900">SPI (Serial Peripheral Interface)</div>
+                                <div class="text-xs text-slate-500">同步序列介面</div>
+                            </td>
+                            <td class="px-6 py-4 font-mono text-sm">
+                                <span class="bg-green-100 text-green-800 px-2 py-1 rounded">高達 35 MHz</span>
+                            </td>
+                            <td class="px-6 py-4 font-mono text-xs">
+                                SCLK, MOSI, MISO, CS
+                            </td>
+                            <td class="px-6 py-4 text-sm text-slate-600">
+                                高解析度室內屏、POE 供電系統
+                            </td>
+                        </tr>
+                        <tr class="hover:bg-purple-50 transition">
+                            <td class="px-6 py-4">
+                                <div class="font-bold text-purple-900">I2C (Inter-Integrated Circuit)</div>
+                                <div class="text-xs text-slate-500">雙線式通訊</div>
+                            </td>
+                            <td class="px-6 py-4 font-mono text-sm">
+                                <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded">400 kHz - 1 MHz</span>
+                            </td>
+                            <td class="px-6 py-4 font-mono text-xs">
+                                SCL, SDA
+                            </td>
+                            <td class="px-6 py-4 text-sm text-slate-600">
+                                智慧音箱 LED 環、小型控制板
+                            </td>
+                        </tr>
+                        <tr class="hover:bg-purple-50 transition">
+                            <td class="px-6 py-4">
+                                <div class="font-bold text-purple-900">NZR (WS2812 Protocol)</div>
+                                <div class="text-xs text-slate-500">單線非歸零碼</div>
+                            </td>
+                            <td class="px-6 py-4 font-mono text-sm">
+                                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded">800 kHz</span>
+                            </td>
+                            <td class="px-6 py-4 font-mono text-xs">
+                                DIN (單根數據線)
+                            </td>
+                            <td class="px-6 py-4 text-sm text-slate-600">
+                                Arduino 燈條專案、創客應用
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
-                `
-            }
-        };
+            </div>
+        </div>
 
-        function selectConnector(key) {
-            document.querySelectorAll('.connector-card').forEach(c => c.classList.remove('active'));
-            document.getElementById(`card-${key}`).classList.add('active');
-            const data = connectorData[key];
-            document.getElementById('connector-icon').textContent = data.icon;
-            document.getElementById('connector-title').textContent = data.title;
-            document.getElementById('connector-desc').textContent = data.desc;
-            document.getElementById('connector-specs').innerHTML = data.specs;
-            document.getElementById('pinout-container').innerHTML = data.pinoutHTML;
-        }
-        selectConnector('rj45');
+        <!-- PWM Principle -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="bg-gradient-to-br from-indigo-900 to-purple-900 text-white p-8 rounded-xl shadow-lg">
+                <h4 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                    <span>⚡</span> PWM 驅動原理
+                </h4>
+                <p class="text-indigo-100 mb-4 leading-relaxed">
+                    <strong>脈衝寬度調變 (Pulse Width Modulation)</strong> 透過快速開關控制 LED 亮度，
+                    人眼因視覺暫留效應，感知為連續的亮度變化。
+                </p>
+                <div class="bg-indigo-950 p-4 rounded-lg border border-indigo-700">
+                    <h5 class="font-bold text-indigo-200 mb-2">技術參數：</h5>
+                    <ul class="space-y-2 text-sm text-indigo-100">
+                        <li>● 刷新率：<strong class="text-white">1920 Hz - 3840 Hz</strong></li>
+                        <li>● 灰度等級：<strong class="text-white">14-bit (16,384 級)</strong></li>
+                        <li>● 占空比控制：<strong class="text-white">0-100%</strong></li>
+                    </ul>
+                </div>
+            </div>
 
-        // --- Topology & Control Logic (Animation) ---
-        const canvas = document.getElementById('topologyCanvas');
-        const ctx = canvas.getContext('2d');
-        let activeTopology = 'chain';
-        function resizeCanvas() { canvas.width = canvas.parentElement.clientWidth; canvas.height = canvas.parentElement.clientHeight; }
-        window.addEventListener('resize', resizeCanvas); resizeCanvas();
+            <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-200">
+                <h4 class="text-2xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                    <span>🔌</span> 控制訊號線路
+                </h4>
+                <div class="space-y-4">
+                    <div class="border-l-4 border-blue-500 pl-4">
+                        <h5 class="font-bold text-slate-800">SCLK (Shift Clock)</h5>
+                        <p class="text-sm text-slate-600 mt-1">
+                            移位時鐘，同步數據傳輸的時序基準。
+                        </p>
+                    </div>
+                    <div class="border-l-4 border-green-500 pl-4">
+                        <h5 class="font-bold text-slate-800">LAT (Latch)</h5>
+                        <p class="text-sm text-slate-600 mt-1">
+                            鎖存訊號，將暫存器數據輸出到 LED。
+                        </p>
+                    </div>
+                    <div class="border-l-4 border-red-500 pl-4">
+                        <h5 class="font-bold text-slate-800">BLANK / OE (Output Enable)</h5>
+                        <p class="text-sm text-slate-600 mt-1">
+                            消隱/致能訊號，控制 LED 的實際點亮時間。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
 
-        class Node { constructor(x, y, label) { this.x = x; this.y = y; this.label = label; } }
-        let nodes = [];
-        
-        function initTopology(type) {
-            nodes = []; const w = canvas.width, h = canvas.height, startX = 50, startY = h/2;
-            nodes.push(new Node(startX, startY, 'Sender'));
-            if(type==='chain'||type==='ring') { const gap=(w-100)/4; for(let i=1;i<=4;i++) nodes.push(new Node(startX+i*gap, startY, `Cab ${i}`)); }
-            else if(type==='star') { nodes.push(new Node(w/2, h/2-60, 'C1'), new Node(w/2+60, h/2, 'C2'), new Node(w/2, h/2+60, 'C3'), new Node(w/2-60, h/2, 'C4')); }
-        }
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-white py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <p class="text-slate-400">
+                    © 2024 LED Display Communication Guide. 
+                    本指南僅供技術學習與參考使用。
+                </p>
+                <p class="text-slate-500 text-sm mt-2">
+                    涵蓋內容：發送卡、接收卡、乙太網協定、像素映射、控制系統
+                </p>
+            </div>
+        </div>
+    </footer>
 
-        function draw() {
-            ctx.clearRect(0,0,canvas.width,canvas.height);
-            if(nodes.length===0) return;
-
-            // 1. Static Lines
-            ctx.lineWidth=3; ctx.strokeStyle='#94a3b8'; ctx.beginPath(); ctx.moveTo(nodes[0].x,nodes[0].y);
-            if(activeTopology==='chain') for(let i=1;i<nodes.length;i++) ctx.lineTo(nodes[i].x,nodes[i].y);
-            else if(activeTopology==='star') for(let i=1;i<nodes.length;i++) { ctx.moveTo(nodes[0].x,nodes[0].y); ctx.lineTo(nodes[i].x,nodes[i].y); }
-            else if(activeTopology==='ring') { 
-                for(let i=1;i<nodes.length;i++) ctx.lineTo(nodes[i].x,nodes[i].y); 
-                ctx.stroke(); ctx.beginPath(); ctx.strokeStyle='#10b981'; 
-                ctx.moveTo(nodes[nodes.length-1].x,nodes[nodes.length-1].y); 
-                ctx.bezierCurveTo(nodes[nodes.length-1].x, nodes[nodes.length-1].y+100, nodes[0].x, nodes[0].y+100, nodes[0].x, nodes[0].y);
-            }
-            ctx.stroke();
-
-            // 2. Animated Packets
-            const time = Date.now() * 0.002;
-            ctx.fillStyle = '#f59e0b';
-            
-            if (activeTopology === 'chain') {
-                const totalDist = nodes[nodes.length-1].x - nodes[0].x;
-                const offset = (time * 100) % totalDist;
-                ctx.beginPath(); ctx.arc(nodes[0].x + offset, nodes[0].y, 6, 0, Math.PI*2); ctx.fill();
-            } else if (activeTopology === 'star') {
-                for(let i=1; i<nodes.length; i++) {
-                    const dx = nodes[i].x - nodes[0].x;
-                    const dy = nodes[i].y - nodes[0].y;
-                    const dist = Math.sqrt(dx*dx + dy*dy);
-                    const progress = (time * 100) % dist;
-                    const ratio = progress / dist;
-                    ctx.beginPath(); ctx.arc(nodes[0].x + dx*ratio, nodes[0].y + dy*ratio, 6, 0, Math.PI*2); ctx.fill();
-                }
-            } else if (activeTopology === 'ring') {
-                const totalDist = nodes[nodes.length-1].x - nodes[0].x;
-                const offset = (time * 100) % totalDist;
-                ctx.beginPath(); ctx.arc(nodes[0].x + offset, nodes[0].y, 6, 0, Math.PI*2); ctx.fill();
-                ctx.fillStyle = '#10b981'; 
-                const returnProgress = (time * 100) % 1000 / 1000;
-                const p0 = {x: nodes[nodes.length-1].x, y: nodes[nodes.length-1].y};
-                const p1 = {x: (nodes[nodes.length-1].x + nodes[0].x)/2, y: nodes[0].y + 100};
-                const p2 = {x: nodes[0].x, y: nodes[0].y};
-                const t = returnProgress;
-                const bx = (1-t)*(1-t)*p0.x + 2*(1-t)*t*p1.x + t*t*p2.x;
-                const by = (1-t)*(1-t)*p0.y + 2*(1-t)*t*p1.y + t*t*p2.y;
-                ctx.beginPath(); ctx.arc(bx, by, 5, 0, Math.PI*2); ctx.fill();
-            }
-
-            // 3. Nodes
-            nodes.forEach(n=>{ 
-                ctx.fillStyle=n.label==='Sender'?'#334155':'#3b82f6'; 
-                ctx.fillRect(n.x-15,n.y-10,30,20); 
-                if(n.label!=='Sender' && Math.random()>0.9) { ctx.fillStyle = '#60a5fa'; ctx.fillRect(n.x-12,n.y-8,24,16); }
-            });
-            requestAnimationFrame(draw);
-        }
-
-        function setTopology(type) { 
-            activeTopology=type; 
-            document.querySelectorAll('.topo-btn').forEach(b=>b.classList.remove('ring-2','bg-indigo-50')); 
-            document.querySelector(`[data-type="${type}"]`).classList.add('ring-2','bg-indigo-50'); 
-            initTopology(type); 
-        }
-
-        function toggleSystem(type) {
-            // Hide all first
-            ['sync', 'async', 'iot', 'softsender', 'allinone'].forEach(m => {
-                const el = document.getElementById(`sys-content-${m}`);
-                if(el) el.classList.add('hidden');
-                const btn = document.getElementById(`btn-${m}`);
-                if(btn) {
-                    btn.classList.remove('bg-indigo-600', 'bg-amber-600', 'bg-emerald-600', 'bg-purple-600', 'bg-red-600', 'text-white');
-                    btn.classList.add('text-slate-500');
-                }
-            });
-
-            // Show selected
-            document.getElementById(`sys-content-${type}`).classList.remove('hidden');
-            const activeBtn = document.getElementById(`btn-${type}`);
-            activeBtn.classList.remove('text-slate-500');
-            activeBtn.classList.add('text-white');
-            
-            // Color logic
-            if (type === 'sync') activeBtn.classList.add('bg-indigo-600');
-            else if (type === 'async') activeBtn.classList.add('bg-amber-600');
-            else if (type === 'iot') activeBtn.classList.add('bg-emerald-600');
-            else if (type === 'softsender') activeBtn.classList.add('bg-purple-600');
-            else if (type === 'allinone') activeBtn.classList.add('bg-red-600');
-        }
-
-        // --- MAPPING LOGIC ---
-        const cabGrid = document.getElementById('mappingGrid');
-        const gridConsole = document.getElementById('gridConsole');
-        const cabinets = [
-            { id: 1, x: 0, y: 0, w: 640, h: 540 }, { id: 2, x: 640, y: 0, w: 640, h: 540 }, { id: 3, x: 1280, y: 0, w: 640, h: 540 },
-            { id: 4, x: 0, y: 540, w: 640, h: 540 }, { id: 5, x: 640, y: 540, w: 640, h: 540 }, { id: 6, x: 1280, y: 540, w: 640, h: 540 }
-        ];
-
-        cabinets.forEach(cab => {
-            const cell = document.createElement('div');
-            cell.className = 'cab-cell';
-            cell.innerHTML = `CAB ${cab.id}<span class="cab-coord">(${cab.x},${cab.y})</span>`;
-            cell.onclick = () => selectCabinet(cab, cell);
-            cabGrid.appendChild(cell);
-        });
-
-        function selectCabinet(cab, el) {
-            document.querySelectorAll('.cab-cell').forEach(c => c.classList.remove('active'));
-            el.classList.add('active');
-            gridConsole.innerHTML = `
-                <span class="text-indigo-600 font-bold">CABINET ${cab.id} SELECTED</span><br/>
-                ----------------------------------------<br/>
-                <span class="text-slate-500">FLASH CONFIG:</span> START_X=${cab.x}, START_Y=${cab.y}, W=${cab.w}, H=${cab.h}<br/>
-                <span class="text-slate-500">FPGA ACTION:</span>  <span class="bg-green-100 text-green-700 px-1">LATCH DATA</span> from stream matching Offset [${cab.x} to ${cab.x+cab.w}]<br/>
-                <span class="text-slate-500">STATUS:</span>      Receive & Display
-            `;
-        }
-
-        // Init all
-        initTopology('chain'); 
-        draw();
-    </script>
+<script>
+// Pixel Load Calculator Function
+function calculatePixelLoad() {
+    const width = parseInt(document.getElementById('screenWidth').value) || 0;
+    const height = parseInt(document.getElementById('screenHeight').value) || 0;
+    const portCount = parseInt(document.getElementById('portCount').value) || 1;
+    
+    const totalPixels = width * height;
+    const pixelsPerPort = Math.ceil(totalPixels / portCount);
+    const portLimit = 650000;
+    const utilizationPercent = ((pixelsPerPort / portLimit) * 100).toFixed(1);
+    
+    const resultDiv = document.getElementById('loadResult');
+    resultDiv.classList.remove('hidden');
+    
+    let statusClass = '';
+    let statusIcon = '';
+    let statusText = '';
+    let recommendation = '';
+    
+    if (pixelsPerPort <= portLimit * 0.8) {
+        statusClass = 'bg-green-50 border-green-300';
+        statusIcon = '✅';
+        statusText = '安全範圍';
+        recommendation = '配置合理，系統運行穩定。';
+    } else if (pixelsPerPort <= portLimit) {
+        statusClass = 'bg-yellow-50 border-yellow-300';
+        statusIcon = '⚠️';
+        statusText = '接近上限';
+        recommendation = '建議增加網口數量或降低解析度。';
+    } else {
+        statusClass = 'bg-red-50 border-red-300';
+        statusIcon = '❌';
+        statusText = '超出負載';
+        recommendation = '必須重新配置！可能出現畫面花屏或黑屏。';
+    }
+    
+    resultDiv.className = `mt-6 p-6 rounded-lg border-2 ${statusClass}`;
+    resultDiv.innerHTML = `
+        <div class="flex items-center gap-3 mb-4">
+            <div class="text-3xl">${statusIcon}</div>
+            <h4 class="text-2xl font-bold text-slate-900">${statusText}</h4>
+        </div>
+        <div class="grid grid-cols-2 gap-4 mb-4">
+            <div class="bg-white p-3 rounded-lg">
+                <div class="text-xs text-slate-500 uppercase">總像素</div>
+                <div class="text-2xl font-bold text-slate-900">${totalPixels.toLocaleString()}</div>
+            </div>
+            <div class="bg-white p-3 rounded-lg">
+                <div class="text-xs text-slate-500 uppercase">每埠負載</div>
+                <div class="text-2xl font-bold text-slate-900">${pixelsPerPort.toLocaleString()}</div>
+            </div>
+        </div>
+        <div class="bg-white p-4 rounded-lg mb-3">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-sm font-bold text-slate-700">負載率</span>
+                <span class="text-lg font-bold text-slate-900">${utilizationPercent}%</span>
+            </div>
+            <div class="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
+                <div class="h-full rounded-full transition-all duration-500" 
+                     style="width: ${Math.min(utilizationPercent, 100)}%; 
+                            background: ${pixelsPerPort > portLimit ? '#ef4444' : pixelsPerPort > portLimit * 0.8 ? '#f59e0b' : '#10b981'}">
+                </div>
+            </div>
+        </div>
+        <p class="text-sm text-slate-700"><strong>建議：</strong>${recommendation}</p>
+    `;
+}
+</script>
 </body>
 </html>
