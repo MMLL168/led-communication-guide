@@ -1,38 +1,44 @@
 # LED Communication Guide
 
-A comprehensive guide on various LED communication protocols, usage, and integration.
+全面解析各類 LED 通訊協定，適用於 Arduino、Raspberry Pi、嵌入式系統、IoT 智慧燈控。
 
 ## 介紹
-本專案旨在提供「LED 通訊」、「LED guide」、「LED communication protocol」主題的完整說明，包括 LED 控制、信號傳輸以及協議介紹。
+本專案聚焦於 LED 通訊技術，涵蓋「LED communication protocol」、「LED guide」、「LED control」等主題。內容包含：燈光訊號原理、最新協定標準、接線設計，以及跨平台實現方式。
 
-## 功能特色
-- 詳細解析 LED 信號及協定
-- 實用範例與程式碼片段
-- 各品牌 LED 控制技巧
+## 特色亮點
+- 支援多種 LED 控制器：Arduino、Raspberry Pi、ESP32 等
+- 實用程式範例與部署教學
+- 常見問題解答與維護指引
+- 深入探討各式 LED 信號處理協定
 
 ## 安裝方式
 ```bash
 git clone https://github.com/MMLL168/led-communication-guide.git
 ```
 
-## 使用說明
-1. 閱讀相關協定章節。
-2. 參考範例整合您的 LED 硬體。
-3. 修改與擴充通訊協定內容。
+## 快速開始
+- 直接閱讀「docs」文件
+- 參考「examples」目錄內範例程式
+- 依照各章節配置您的 LED 系統
 
-## 範例
+## 範例程式（Arduino）
 ```c
-// 範例：發送信號給 LED
-void send_led_signal(int pin, int value){
-    digitalWrite(pin, value);
+void setup() {
+  pinMode(LED_BUILTIN, OUTPUT);
+}
+void loop() {
+  digitalWrite(LED_BUILTIN, HIGH); // 開燈
+  delay(1000);
+  digitalWrite(LED_BUILTIN, LOW);  // 關燈
+  delay(1000);
 }
 ```
 
-## 關鍵字
-LED、LED 通訊、LED communication protocol、LED guide、protocol、signaling、control
+## 相關關鍵字
+LED、LED 通訊、LED communication protocol、IoT、Arduino、Raspberry Pi、燈控、embedded system
 
-## 貢獻
-歡迎提出 issue、PR 或討論！
+## 貢獻方式
+歡迎投稿 issue、pull request 或參與討論！
 
 ## 授權
 MIT License
